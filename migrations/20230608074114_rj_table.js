@@ -10,6 +10,11 @@ exports.up = function(knex) {
       tbl.string('work_directory').notNullable()
       tbl.timestamps(true, true)
     })
+    .createTable('t_tag', tbl => {
+        tbl.string('tag')
+        tbl.string('tag_rjcode')
+        tbl.foreign('tag_rjcode').references('rjcode').inTable('ys')
+    })
   };
   
   /**
@@ -17,6 +22,6 @@ exports.up = function(knex) {
    * @returns { Promise<void> }
    */
   exports.down = function(knex) {
-    return knex.schema.dropTableIfExists('ys')
+    return knex.schema.dropTableIfExists('ys').dropTableIfExists('t_tag')
   };
   
