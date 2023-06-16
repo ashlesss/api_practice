@@ -65,6 +65,17 @@ server.get('/api/tag/:id', (req, res) => {
     })
 })
 
+// GET /api/record?rjcode=RJ123456
+server.get('/api/record', (req, res) => {
+    ysdb.getFullRecord(req.query.rjcode).then( ysdb => {
+        res.status(200).send(ysdb);
+        // console.log(ysdb.work[0].work_title);
+    })
+    .catch( error => {
+        res.status(500).send("message: error on get work all record")
+    })
+})
+
 server.listen(PORT, () => {
     console.log(`\n server running on port ${PORT} \n`)
 });

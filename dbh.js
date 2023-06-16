@@ -9,6 +9,7 @@ module.exports = {
     getWorkInfo,
     getWorkMetadata,
     getWorkTag,
+    getFullRecord,
     // isDuplicate
 }
 
@@ -64,6 +65,8 @@ async function getWorkTag(rjcode) {
     return await db('t_tag').select('tag').where({tag_rjcode : rjcode})
 }
 
+
+// May need to add rate limit in order to keep from blocking.
 async function getWorkMetadata(rjcode) {
     // const rj = "RJ400984";
     const metadata = await fetch('https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=' + rjcode, {
@@ -96,4 +99,18 @@ async function isDuplicate(rjcode) {
     else {
         return false;
     }
+}
+
+async function getFullRecord(rjcode) {
+    const ysRec = await db('ys').where({rj_code : rjcode});
+
+    const tagRec = await db('t_tag').select('tag').where({tag_rjcode: rjcode});
+
+    if (ysRec.length === 0 && tagRec.length === 0) {
+        return {message: "workRecordNotFound"};
+    }
+    else {
+        return {work: ysRec, tags: tagRec};
+    }
+
 }
