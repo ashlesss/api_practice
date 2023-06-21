@@ -11,10 +11,17 @@ exports.up = function(knex) {
       tbl.string('work_img_dir')
       tbl.timestamps(true, true)
     })
+    .createTable('t_tag_id', tbl => {
+      tbl.increments()
+      tbl.string('tag_name').notNullable().primary()
+    })
     .createTable('t_tag', tbl => {
-        tbl.string('tag')
-        tbl.string('tag_rjcode')
-        tbl.foreign('tag_rjcode').references('rjcode').inTable('ys')
+      // tbl.string('tag')
+      tbl.integer('tag_id')
+      tbl.string('tag_rjcode')
+      tbl.foreign('tag_id').references('id').inTable('t_tag_id')
+      tbl.foreign('tag_rjcode').references('rjcode').inTable('ys')
+      tbl.primary(['tag_id', 'tag_rjcode'])
     })
   };
   
@@ -23,6 +30,8 @@ exports.up = function(knex) {
    * @returns { Promise<void> }
    */
   exports.down = function(knex) {
-    return knex.schema.dropTableIfExists('ys').dropTableIfExists('t_tag')
+    return knex.schema.dropTableIfExists('ys')
+    .dropTableIfExists('t_tag')
+    .dropTableIfExists('t_tag_id')
   };
   

@@ -14,7 +14,8 @@ module.exports = {
     getWorkTag,
     getFullRecord,
     getImage,
-    // isDuplicate
+    // helper,
+    isDuplicate
 }
 
 
@@ -23,6 +24,9 @@ module.exports = {
 // Only read rjcode from the folder name 
 // Get work's name from API and write it to database
 async function add() {
+    // Test mode 
+    // await delAll()
+
     const rootFolder = '/mnt/hgfs/test/RJ400000/'
     const folders = await fs.readdirSync(rootFolder);
     // console.log(rootFolder);
@@ -31,28 +35,62 @@ async function add() {
         if (folder.match(/RJ\d{8}/)) {
             if (! (await isDuplicate(folder.slice(0, 10)))) {
                 await db('ys')
-                .insert({rj_code: folder.slice(0, 10), work_title: folder.slice(10), work_directory: (rootFolder + folder)})
+                .insert({
+                    rj_code: folder.slice(0, 10),
+                    work_title: folder.slice(10), 
+                    work_directory: (rootFolder + folder)})
                 // .onConflict('rj_code').ignore()
                 await getWorkMetadata(folder.slice(0, 10))
             }
             else {
                 continue
             }
+
+            // // TEST
+            // await db('ys')
+            // .insert({rj_code: folder.slice(0, 10), work_title: folder.slice(10), work_directory: (rootFolder + folder)})
+            // await getWorkMetadata(folder.slice(0, 10))
         }
         else if (folder.match(/RJ\d{6}/)) {
             if (!(await isDuplicate(folder.slice(0, 8)))) {
                 await db('ys')
-                .insert({rj_code: folder.slice(0, 8), work_title: folder.slice(8), work_directory: (rootFolder + folder)})
+                .insert({
+                    rj_code: folder.slice(0, 8), 
+                    work_title: folder.slice(8), 
+                    work_directory: (rootFolder + folder)})
                 // .onConflict('rj_code').ignore()
                 await getWorkMetadata(folder.slice(0, 8))
             }
             else {
                 continue
             }
+
+            // // TEST
+            // await db('ys')
+            // .insert({rj_code: folder.slice(0, 8), work_title: folder.slice(8), work_directory: (rootFolder + folder)})
+            // await getWorkMetadata(folder.slice(0, 8))
         }
     }
     return getRecord()
+    // return db('ys')
 }
+
+// helper 
+// async function helper(rjcode) {
+//     // const ysRec = await db('ys').where({rj_code : rjcode});
+
+//     // const tagRec = await db('t_tag').select('tag').where({tag_rjcode: rjcode});
+
+//     // if (ysRec.length === 0 && tagRec.length === 0) {
+//     //     return {message: "workNotFound"};
+//     // }
+//     // else {
+//     //     return {work: ysRec, tags: tagRec};
+//     // }
+//     return await db('t_tag_id')
+//     .select('tag_name').join('t_tag', "t_tag_id.id", '=', "t_tag.tag_id")
+//     .where({tag_rjcode: rjcode})
+// }
 
 // TODO
 // May need to add rate limit in order to keep from blocking.
@@ -68,7 +106,17 @@ async function getWorkMetadata(rjcode) {
 
     for (let i = 0; i < metaJson[0].genres.length; i++) {
         // genres.push(metaJson[0].genres[i].name);
-        await db('t_tag').insert({tag : metaJson[0].genres[i].name, tag_rjcode : rjcode})
+        // await db('t_tag').insert({tag : metaJson[0].genres[i].name, tag_rjcode : rjcode})
+        await db('t_tag_id')
+        .insert({tag_name: metaJson[0].genres[i].name})
+        .onConflict('tag_name').ignore();
+
+        let tagId = await db('t_tag_id')
+        .select('id')
+        .where({tag_name : metaJson[0].genres[i].name})
+
+        // console.log(tagId);
+        await db('t_tag').insert({tag_id: tagId[0].id, tag_rjcode: rjcode})
     }
 
     // Get work image
@@ -101,7 +149,8 @@ async function getImage(rjcode, metaJson) {
         res.data.on('end', () => {
             console.log(`${imgName} download completed`);
         })
-        await db('ys').where({rj_code: rjcode}).update({work_img_dir: (imgPath + imgName)})
+        await db('ys').where({rj_code: rjcode})
+        .update({work_img_dir: (imgPath + imgName)})
     })
 }
 
@@ -123,7 +172,12 @@ async function isDuplicate(rjcode) {
 async function getFullRecord(rjcode) {
     const ysRec = await db('ys').where({rj_code : rjcode});
 
-    const tagRec = await db('t_tag').select('tag').where({tag_rjcode: rjcode});
+    const tagRec = await db('t_tag_id')
+    .select('tag_name')
+    .join('t_tag', "t_tag_id.id", "=", "t_tag.tag_id")
+    .where({tag_rjcode: rjcode})
+
+    // const tagRec = await db('t_tag').select('tag').where({tag_rjcode: rjcode});
 
     if (ysRec.length === 0 && tagRec.length === 0) {
         return {message: "workNotFound"};
@@ -135,8 +189,11 @@ async function getFullRecord(rjcode) {
 }
 
 async function delAll() {
+    // await db('ys').del().truncate();
+    // await db('t_tag').del();
     await db('ys').del().truncate();
-    await db('t_tag').del();
+    await db('t_tag_id').del().truncate()
+    await db('t_tag').del().truncate()
     return db('ys')
 }
 

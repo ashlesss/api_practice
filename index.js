@@ -43,6 +43,15 @@ server.get('/api/find/:id', (req, res) => {
     })
 });
 
+// server.get('/api/find/:id', (req, res) => {
+//     ysdb.helper(req.params.id).then( ysdb => {
+//         res.status(200).send(ysdb)
+//     })
+//     .catch( error => {
+//         res.status(500).json({ message: "Error on helper()"})
+//     })
+// });
+
 server.get('/api/tag/:id', (req, res) => {
     ysdb.getWorkTag(req.params.id).then( ysdb => {
         res.status(200).send(ysdb);
@@ -64,15 +73,15 @@ server.get('/api/record', (req, res) => {
 })
 
 // Test function for isDuplicate()
-// server.get('/api/dup/:id', (req, res) => {
-//     ysdb.isDuplicate(req.params.id).then( ysdb => {
-//         res.status(200).send(ysdb);
-//         // console.log(ysdb.work[0].work_title);
-//     })
-//     .catch( error => {
-//         res.status(500).send("message: error on get isDup")
-//     })
-// })
+server.get('/api/dup/:id', (req, res) => {
+    ysdb.isDuplicate(req.params.id).then( ysdb => {
+        res.status(200).send(ysdb);
+        // console.log(ysdb.work[0].work_title);
+    })
+    .catch( error => {
+        res.status(500).send("message: error on get isDup")
+    })
+})
 
 // Test function for getImage()
 // server.get('/api/img', (req, res) => {
