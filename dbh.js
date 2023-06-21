@@ -15,7 +15,7 @@ module.exports = {
     getFullRecord,
     getImage,
     // helper,
-    isDuplicate
+    // isDuplicate
 }
 
 
@@ -155,7 +155,7 @@ async function getImage(rjcode, metaJson) {
 }
 
 async function isDuplicate(rjcode) {
-    const status = await fetch('http://localhost:4000/api/find/' + rjcode, {
+    const status = await fetch('http://localhost:4000/api/query/find/' + rjcode, {
         method: 'GET'
     })
 
