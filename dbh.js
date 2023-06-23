@@ -138,6 +138,7 @@ async function getImage(rjcode, metaJson) {
     const imgName = path.parse(url).base
 
     const imgPath = './static/img/'
+    // console.log(imgPath);
 
     axios({
         method: 'GET',
@@ -150,7 +151,7 @@ async function getImage(rjcode, metaJson) {
             console.log(`${imgName} download completed`);
         })
         await db('ys').where({rj_code: rjcode})
-        .update({work_img_dir: (imgPath + imgName)})
+        .update({work_main_img: (imgName)})
     })
 }
 

@@ -8,7 +8,7 @@ exports.up = function(knex) {
       tbl.string('rj_code').notNullable().primary()
       tbl.string('work_title').notNullable()
       tbl.string('work_directory').notNullable()
-      tbl.string('work_img_dir')
+      tbl.string('work_main_img')
       tbl.timestamps(true, true)
     })
     .createTable('t_tag_id', tbl => {
