@@ -72,8 +72,7 @@ async function add() {
             // await getWorkMetadata(folder.slice(0, 8))
         }
     }
-    return getRecord()
-    // return db('ys')
+    return await db('ys').count({count: 'rj_code'})
 }
 
 // helper 
@@ -200,57 +199,61 @@ async function delAll() {
 }
 
 // This function now return all the works with tags from the database
-// Limit works per page = 3
-async function getWorks(page) {
-    // console.log(page); // String
-    const worksPerPage = 3;
-    const totalWorks = await db('ys').count({count: 'rj_code'});
-    // console.log(totalWorks[0].count); //number
-    const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
-    // console.log(totalPage);
-    // console.log(Number(page) + (2 * (Number(page) - 1) -1));
-    if (page === '1') {
-        const curWorks = await db('ys').orderBy('id').limit(worksPerPage).offset(0)
+// Limit works per page = 12
+// TODO 
+// Make works per page as a dynamic value 
+async function getWorks(page, isAll) {
 
-        let works = [];
+    if (isAll && isAll == 'yes') {
+        const allworks = await db('ys').select('rj_code')
 
-        for (let i = 0; i < curWorks.length; i++) {
-            works.push(await getFullRecord(curWorks[i].rj_code))
+        let fullRecord = [];
+
+        for (let i = 0; i < allworks.length; i++) {
+            fullRecord.push(await getFullRecord(allworks[i].rj_code))
         }
-        works.push({max_page: totalPage})
-        works.push({current_page: Number(page)})
-        return works
-    }
-    else if (Number(page) <= totalPage) {
-        const curWorks = await db('ys')
-        .orderBy('id')
-        .limit(worksPerPage)
-        .offset(Number(page) + (2 * (Number(page) - 1) -1))
-
-        let works = [];
-
-        for (let i = 0; i < curWorks.length; i++) {
-            works.push(await getFullRecord(curWorks[i].rj_code))
-        }
-        works.push({max_page: totalPage})
-        works.push({current_page: Number(page)})
-        return works
+        fullRecord.push(await db('ys').count({count: 'rj_code'}))
+        return fullRecord
     }
     else {
-        return {message: "no more page"}
+        // console.log(page); // String
+        const worksPerPage = 12;
+        const totalWorks = await db('ys').count({count: 'rj_code'});
+        const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
+        if (page === '1') {
+            const curWorks = await db('ys').orderBy('id').limit(worksPerPage).offset(0)
+
+            let works = [];
+
+            for (let i = 0; i < curWorks.length; i++) {
+                works.push(await getFullRecord(curWorks[i].rj_code))
+            }
+            works.push({max_page: totalPage})
+            works.push({current_page: Number(page)})
+            return works
+        }
+        else if (Number(page) <= totalPage) {
+            // console.log(worksPerPage * (Number(page) - 1));
+            const curWorks = await db('ys')
+            .orderBy('id')
+            .limit(worksPerPage)
+            .offset((worksPerPage * (Number(page) - 1)))
+
+            //when 3 works per page (2 * (Number(page) - 1) -1)
+
+            let works = [];
+
+            for (let i = 0; i < curWorks.length; i++) {
+                works.push(await getFullRecord(curWorks[i].rj_code))
+            }
+            works.push({max_page: totalPage})
+            works.push({current_page: Number(page)})
+            return works
+        }
+        else {
+            return {message: "no more page"}
+        }
     }
-    // console.log(curWorks);
-
-
-    // const allworks = await db('ys').select('rj_code')
-    // // console.log(allworks[0].rj_code);
-
-    // let fullRecord = [];
-
-    // for (let i = 0; i < allworks.length; i++) {
-    //     fullRecord.push(await getFullRecord(allworks[i].rj_code))
-    // }
-    // return fullRecord
 }
 
 // This function will return single record from given rjcode

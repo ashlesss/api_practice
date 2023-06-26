@@ -5,7 +5,7 @@ const router = express.Router();
 // Endpoint /api/query/
 
 router.get('/rc', (req, res) => {
-    ysdb.getWorks(req.query.page).then(ysdb => {
+    ysdb.getWorks(req.query.page, req.query.isall).then(ysdb => {
         res.status(200).json(ysdb)
     })
     .catch( error => {
