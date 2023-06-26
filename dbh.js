@@ -4,11 +4,12 @@ const db = knex(config.development)
 const fs = require("fs-extra")
 const axios = require('axios')
 const path = require('node:path'); 
+const { stringify } = require('node:querystring')
 
 module.exports = {
     add,
     delAll,
-    getRecord,
+    getWorks,
     getWorkInfo,
     getWorkMetadata,
     getWorkTag,
@@ -199,17 +200,57 @@ async function delAll() {
 }
 
 // This function now return all the works with tags from the database
-async function getRecord() {
+// Limit works per page = 3
+async function getWorks(page) {
+    // console.log(page); // String
+    const worksPerPage = 3;
+    const totalWorks = await db('ys').count({count: 'rj_code'});
+    // console.log(totalWorks[0].count); //number
+    const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
+    // console.log(totalPage);
+    // console.log(Number(page) + (2 * (Number(page) - 1) -1));
+    if (page === '1') {
+        const curWorks = await db('ys').orderBy('id').limit(worksPerPage).offset(0)
 
-    const allworks = await db('ys').select('rj_code')
-    // console.log(allworks[0].rj_code);
+        let works = [];
 
-    let fullRecord = [];
-
-    for (let i = 0; i < allworks.length; i++) {
-        fullRecord.push(await getFullRecord(allworks[i].rj_code))
+        for (let i = 0; i < curWorks.length; i++) {
+            works.push(await getFullRecord(curWorks[i].rj_code))
+        }
+        works.push({max_page: totalPage})
+        works.push({current_page: Number(page)})
+        return works
     }
-    return fullRecord
+    else if (Number(page) <= totalPage) {
+        const curWorks = await db('ys')
+        .orderBy('id')
+        .limit(worksPerPage)
+        .offset(Number(page) + (2 * (Number(page) - 1) -1))
+
+        let works = [];
+
+        for (let i = 0; i < curWorks.length; i++) {
+            works.push(await getFullRecord(curWorks[i].rj_code))
+        }
+        works.push({max_page: totalPage})
+        works.push({current_page: Number(page)})
+        return works
+    }
+    else {
+        return {message: "no more page"}
+    }
+    // console.log(curWorks);
+
+
+    // const allworks = await db('ys').select('rj_code')
+    // // console.log(allworks[0].rj_code);
+
+    // let fullRecord = [];
+
+    // for (let i = 0; i < allworks.length; i++) {
+    //     fullRecord.push(await getFullRecord(allworks[i].rj_code))
+    // }
+    // return fullRecord
 }
 
 // This function will return single record from given rjcode

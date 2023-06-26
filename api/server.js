@@ -1,13 +1,13 @@
 const express = require('express');
 const dbquery = require('../routes/db_query');
 const dbops = require('../routes/db_ops');
+const cors = require('cors')
 
 const server = express();
 
+server.use(cors())
 server.use(express.json())
-
 server.use('/api/query', dbquery);
-
 server.use('/api/ops', dbops);
 
 // Serving work's image
