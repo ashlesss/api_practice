@@ -24,6 +24,11 @@ module.exports = {
 // Make rootFolder a dynamic value
 // Only read rjcode from the folder name 
 // Get work's name from API and write it to database
+
+// Rate limiting the request 
+const sleep = (milliseconds) =>
+    new Promise((resolve) => setTimeout(resolve, milliseconds));
+
 async function add() {
     // Test mode 
     // await delAll()
@@ -32,6 +37,7 @@ async function add() {
     const folders = await fs.readdirSync(rootFolder);
     // console.log(rootFolder);
     // console.log(typeof fileList[0].slice(0, 8));
+    let i = 0
     for ( const folder of folders ) {
         if (folder.match(/RJ\d{8}/)) {
             if (! (await isDuplicate(folder.slice(0, 10)))) {
@@ -41,7 +47,12 @@ async function add() {
                     work_title: folder.slice(10), 
                     work_directory: (rootFolder + folder)})
                 // .onConflict('rj_code').ignore()
+                i++;
                 await getWorkMetadata(folder.slice(0, 10))
+                if ((i % 5) === 0) {
+                    console.log("Cooldown 2 sec for every 5 requests");
+                    await sleep(2000)
+                }
             }
             else {
                 continue
@@ -60,7 +71,12 @@ async function add() {
                     work_title: folder.slice(8), 
                     work_directory: (rootFolder + folder)})
                 // .onConflict('rj_code').ignore()
+                i++
                 await getWorkMetadata(folder.slice(0, 8))
+                if ((i % 5) === 0) {
+                    console.log("Cooldown 2 sec for every 5 requests");
+                    await sleep(2000)
+                }
             }
             else {
                 continue
@@ -93,7 +109,6 @@ async function add() {
 // }
 
 // TODO
-// May need to add rate limit in order to keep from blocking.
 // Need to change function name to reflect how this works
 // May need to consider work don't have tags in Chinese
 async function getWorkMetadata(rjcode) {

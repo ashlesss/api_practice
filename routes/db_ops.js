@@ -9,7 +9,7 @@ router.get('/init', (req, res) => {
         res.status(200).json(ysdb)
     })
     .catch( error => {
-        res.status(500).json({message: "cannot add dev"});
+        res.status(500).json(error);
     });
 });
 
