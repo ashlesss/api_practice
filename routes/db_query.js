@@ -1,5 +1,5 @@
 const express = require('express');
-const ysdb = require('../dbh');
+const ysdb = require('../database/query');
 const router = express.Router();
 
 // Endpoint /api/query/
