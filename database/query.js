@@ -70,7 +70,7 @@ async function getWorks(page, isAll) {
         const totalWorks = await db('ys').count({count: 'rj_code'});
         const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
         if (page === '1') {
-            const curWorks = await db('ys').orderBy('id').limit(worksPerPage).offset(0)
+            const curWorks = await db('ys').orderBy('alt_rj_code', 'asc').limit(worksPerPage).offset(0)
 
             let works = [];
 
@@ -84,7 +84,7 @@ async function getWorks(page, isAll) {
         else if (Number(page) <= totalPage) {
             // console.log(worksPerPage * (Number(page) - 1));
             const curWorks = await db('ys')
-            .orderBy('id')
+            .orderBy('alt_rj_code', 'asc')
             .limit(worksPerPage)
             .offset((worksPerPage * (Number(page) - 1)))
 

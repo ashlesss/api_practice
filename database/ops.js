@@ -26,21 +26,26 @@ async function add() {
     // await delAll()
 
     const rootFolder = '/mnt/hgfs/test/RJ400000/'
+    // const rootFolder = '/mnt/hgfs/test/2/'
     const folders = await fs.readdirSync(rootFolder);
-    // console.log(rootFolder);
-    // console.log(typeof fileList[0].slice(0, 8));
     let i = 0
     for ( const folder of folders ) {
         if (folder.match(/RJ\d{8}/)) {
             if (! (await isDuplicate(folder.slice(0, 10)))) {
-                await db('ys')
-                .insert({
-                    rj_code: folder.slice(0, 10),
-                    work_title: folder.slice(10), 
-                    work_directory: (rootFolder + folder)})
-                // .onConflict('rj_code').ignore()
+                const work = {
+                    rjcode: folder.slice(0, 10),
+                    alt_rj_code: Number(folder.slice(2, 10)), 
+                    work_name: "",
+                    work_directory: (rootFolder + folder),
+                    circleId: [],
+                    nsfw: "",
+                    imgName: "",
+                    official_price: [],
+                    regist_date: ""
+                }
+
                 i++;
-                await getWorkMetadata(folder.slice(0, 10))
+                await getWorkMetadata(work.rjcode, work)
                 if ((i % 5) === 0) {
                     console.log("Cooldown 2 sec for every 5 requests");
                     await sleep(2000)
@@ -49,22 +54,24 @@ async function add() {
             else {
                 continue
             }
-
-            // // TEST
-            // await db('ys')
-            // .insert({rj_code: folder.slice(0, 10), work_title: folder.slice(10), work_directory: (rootFolder + folder)})
-            // await getWorkMetadata(folder.slice(0, 10))
         }
         else if (folder.match(/RJ\d{6}/)) {
+            // for RJ123456
             if (!(await isDuplicate(folder.slice(0, 8)))) {
-                await db('ys')
-                .insert({
-                    rj_code: folder.slice(0, 8), 
-                    work_title: folder.slice(8), 
-                    work_directory: (rootFolder + folder)})
-                // .onConflict('rj_code').ignore()
+                const work = {
+                    rjcode: folder.slice(0, 8),
+                    alt_rj_code: Number(folder.slice(2, 8)), 
+                    work_name: "",
+                    work_directory: (rootFolder + folder),
+                    circleId: [],
+                    nsfw: "",
+                    imgName: "",
+                    official_price: [],
+                    regist_date: ""
+                }
+
                 i++
-                await getWorkMetadata(folder.slice(0, 8))
+                await getWorkMetadata(work.rjcode, work)
                 if ((i % 5) === 0) {
                     console.log("Cooldown 2 sec for every 5 requests");
                     await sleep(2000)
@@ -73,20 +80,17 @@ async function add() {
             else {
                 continue
             }
-
-            // // TEST
-            // await db('ys')
-            // .insert({rj_code: folder.slice(0, 8), work_title: folder.slice(8), work_directory: (rootFolder + folder)})
-            // await getWorkMetadata(folder.slice(0, 8))
         }
     }
     return await db('ys').count({count: 'rj_code'})
 }
 
 // TODO
-// Need to change function name to reflect how this works
 // May need to consider work don't have tags in Chinese
-async function getWorkMetadata(rjcode) {
+
+// @param {Object} work object
+async function getWorkMetadata(rjcode , work) {
+    // console.log(work);
     // const rj = "RJ400984";
     const metadata = await fetch('https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=' + rjcode, {
         method: 'GET'
@@ -94,30 +98,97 @@ async function getWorkMetadata(rjcode) {
 
     const metaJson = await metadata.json()
 
+    // Get work title
+    const name = metaJson[0].work_name
+    work.work_name = name
+
+    // Insert work tags
     for (let i = 0; i < metaJson[0].genres.length; i++) {
-        // genres.push(metaJson[0].genres[i].name);
-        // await db('t_tag').insert({tag : metaJson[0].genres[i].name, tag_rjcode : rjcode})
+        // console.log(metaJson[0].genres[i].name);
+
         await db('t_tag_id')
-        .insert({tag_name: metaJson[0].genres[i].name})
-        .onConflict('tag_name').ignore();
+        .insert({
+            id: metaJson[0].genres[i].id,
+            tag_name: metaJson[0].genres[i].name
+        })
+        .onConflict('id').ignore()
+        .catch(err => {
+            console.log(err);
+        })
 
-        let tagId = await db('t_tag_id')
-        .select('id')
-        .where({tag_name : metaJson[0].genres[i].name})
-
-        // console.log(tagId);
-        await db('t_tag').insert({tag_id: tagId[0].id, tag_rjcode: rjcode})
+        await db('t_tag')
+        .insert({
+            tag_id: metaJson[0].genres[i].id,
+            tag_rjcode: rjcode
+        })
     }
 
-    // Get work image
-    await getImage(rjcode, metaJson)
+    // // Insert work circle
+    await db('t_circle')
+    .returning('id')
+    .insert({circle_name: metaJson[0].maker_name})
+    .onConflict('circle_name')
+    .ignore()
+
+    let circleId = await db('t_circle')
+    .select('id')
+    .where({circle_name: metaJson[0].maker_name})
+
+    work.circleId = circleId[0].id
+
+    // // Get nsfw meta
+    // // console.log(metaJson[0].age_category_string);
+    let nsfw;
+    if (metaJson[0].age_category_string === 'adult') {
+        nsfw = true;
+    }
+    else {
+        nsfw = false;
+    }
+    work.nsfw = nsfw;
+
+    // // Get work image
+    const imgName = await getImage(metaJson)
+    work.imgName = imgName;
+
+    // Get official_price
+    const price = metaJson[0].official_price
+    work.official_price = price
+
+    // TODO
+    // Get dl_count(sell counts)
+    
+
+    // Get regist_date
+    const release = metaJson[0].regist_date
+    work.regist_date = release.slice(0, 10)
+    
+
+    // console.log(work);
+
+    await db('ys')
+    .insert({
+        rj_code: work.rjcode,
+        alt_rj_code: work.alt_rj_code, 
+        work_title: work.work_name, 
+        work_directory: work.work_directory,
+        work_main_img: work.imgName,
+        circle_id: work.circleId,
+        nsfw: work.nsfw,
+        official_price: work.official_price,
+        regist_date: work.regist_date
+    })
+    .onConflict('rj_code').ignore()
+    .catch(err => {
+        console.log(err);
+    })
 
 }
 
 // TODO
 // Need rate limit as well
 // Make img directory dynamic
-async function getImage(rjcode, metaJson) {
+async function getImage(metaJson) {
 
     const url = 'https:' + metaJson[0].image_main.url
 
@@ -140,9 +211,9 @@ async function getImage(rjcode, metaJson) {
         res.data.on('end', () => {
             console.log(`${imgName} download completed`);
         })
-        await db('ys').where({rj_code: rjcode})
-        .update({work_main_img: (imgName)})
     })
+
+    return imgName
 }
 
 async function delAll() {
@@ -151,6 +222,7 @@ async function delAll() {
     await db('ys').del().truncate();
     await db('t_tag_id').del().truncate()
     await db('t_tag').del().truncate()
+    await db('t_circle').del().truncate()
     return db('ys')
 }
 
