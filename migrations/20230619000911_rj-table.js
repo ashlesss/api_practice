@@ -14,6 +14,9 @@ exports.up = function(knex) {
       tbl.integer('official_price')
       tbl.integer('dl_count')
       tbl.string('regist_date')
+      tbl.integer('rate_count')
+      tbl.float('rate_average_2dp')
+      tbl.string('rate_count_detail')
       tbl.timestamps(true, true)
 
       tbl.foreign('circle_id').references('id').inTable('t_circle')

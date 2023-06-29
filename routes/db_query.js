@@ -6,7 +6,13 @@ const router = express.Router();
 
 router.get('/rc', (req, res) => {
     ysdb.getWorks(req.query.page, req.query.isall).then(ysdb => {
-        res.status(200).json(ysdb)
+        // console.log(ysdb.message)
+        if (ysdb.message && ysdb.message === 'no more page') {
+            res.status(404).json(ysdb);
+        }
+        else {
+            res.status(200).json(ysdb);
+        }
     })
     .catch( error => {
         res.status(500).json({message: "cannot get rc"});

@@ -17,7 +17,10 @@ module.exports = {
 // Only read rjcode from the folder name 
 // Get work's name from API and write it to database
 
-// Rate limiting the request 
+/**
+ * Rate limiting the request 
+ * @param {Number} milliseconds 
+ */
 const sleep = (milliseconds) =>
     new Promise((resolve) => setTimeout(resolve, milliseconds));
 
@@ -26,7 +29,7 @@ async function add() {
     // await delAll()
 
     const rootFolder = '/mnt/hgfs/test/RJ400000/'
-    // const rootFolder = '/mnt/hgfs/test/2/'
+    // const rootFolder = '/mnt/hgfs/test/1/'
     const folders = await fs.readdirSync(rootFolder);
     let i = 0
     for ( const folder of folders ) {
@@ -41,7 +44,11 @@ async function add() {
                     nsfw: "",
                     imgName: "",
                     official_price: [],
-                    regist_date: ""
+                    regist_date: "",
+                    dl_count: [],
+                    rate_count: [],
+                    rate_average_2dp: [],
+                    rate_count_detail: ""
                 }
 
                 i++;
@@ -67,7 +74,11 @@ async function add() {
                     nsfw: "",
                     imgName: "",
                     official_price: [],
-                    regist_date: ""
+                    regist_date: "",
+                    dl_count: [],
+                    rate_count: [],
+                    rate_average_2dp: [],
+                    rate_count_detail: ""
                 }
 
                 i++
@@ -87,24 +98,43 @@ async function add() {
 
 // TODO
 // May need to consider work don't have tags in Chinese
-
-// @param {Object} work object
+/**
+ * 
+ * @param {string} rjcode rjcode string
+ * @param {object} work object
+ */
 async function getWorkMetadata(rjcode , work) {
-    // console.log(work);
-    // const rj = "RJ400984";
-    const metadata = await fetch('https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=' + rjcode, {
+
+    // Fetch metadata without dl_count
+    const metadata = await fetch(`https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`, {
         method: 'GET'
     })
-
     const metaJson = await metadata.json()
 
+    // Fetch work's sales info
+    const salesinfo = await fetch(`https://www.dlsite.com/maniax-touch/product/info/ajax?product_id=${rjcode}`, {
+        method: 'GET'
+    })
+    const salesJson = await salesinfo.json()
+    // console.log(salesJson[rjcode]);
+
+    // Get dl_count [string type]
+    work.dl_count = Number(salesJson[rjcode].dl_count)
+
+    // Get rate_count
+    work.rate_count = salesJson[rjcode].rate_count
+
+    // Get rate_average_2dp
+    work.rate_average_2dp = salesJson[rjcode].rate_average_2dp
+
+    // Get rate_count_detail
+    work.rate_count_detail = metaJson[0].rate_count_detail
+
     // Get work title
-    const name = metaJson[0].work_name
-    work.work_name = name
+    work.work_name = metaJson[0].work_name
 
     // Insert work tags
     for (let i = 0; i < metaJson[0].genres.length; i++) {
-        // console.log(metaJson[0].genres[i].name);
 
         await db('t_tag_id')
         .insert({
@@ -137,7 +167,6 @@ async function getWorkMetadata(rjcode , work) {
     work.circleId = circleId[0].id
 
     // // Get nsfw meta
-    // // console.log(metaJson[0].age_category_string);
     let nsfw;
     if (metaJson[0].age_category_string === 'adult') {
         nsfw = true;
@@ -148,22 +177,14 @@ async function getWorkMetadata(rjcode , work) {
     work.nsfw = nsfw;
 
     // // Get work image
-    const imgName = await getImage(metaJson)
-    work.imgName = imgName;
+    work.imgName = await getImage(metaJson);
 
     // Get official_price
-    const price = metaJson[0].official_price
-    work.official_price = price
-
-    // TODO
-    // Get dl_count(sell counts)
-    
+    work.official_price = metaJson[0].official_price
 
     // Get regist_date
-    const release = metaJson[0].regist_date
-    work.regist_date = release.slice(0, 10)
+    work.regist_date = metaJson[0].regist_date.slice(0, 10)
     
-
     // console.log(work);
 
     await db('ys')
@@ -176,7 +197,11 @@ async function getWorkMetadata(rjcode , work) {
         circle_id: work.circleId,
         nsfw: work.nsfw,
         official_price: work.official_price,
-        regist_date: work.regist_date
+        regist_date: work.regist_date,
+        dl_count: work.dl_count,
+        rate_count: work.rate_count,
+        rate_average_2dp: work.rate_average_2dp,
+        rate_count_detail: work.rate_count_detail,
     })
     .onConflict('rj_code').ignore()
     .catch(err => {
@@ -188,57 +213,43 @@ async function getWorkMetadata(rjcode , work) {
 // TODO
 // Need rate limit as well
 // Make img directory dynamic
+
+/**
+ * 
+ * @param {JSON} metaJson 
+ * @returns imgName work's main image name
+ */
 async function getImage(metaJson) {
 
     const url = 'https:' + metaJson[0].image_main.url
-
-    // const url = 'https://img.dlsite.jp/modpub/images2/work/doujin/RJ344000/RJ343788_img_main.jpg'
-
-    // console.log(path.parse(url).base);
-
     const imgName = path.parse(url).base
-
     const imgPath = './static/img/'
-    // console.log(imgPath);
 
-    axios({
-        method: 'GET',
-        url: url,
-        responseType: 'stream'
-    })
-    .then(async res => {
-        res.data.pipe(fs.createWriteStream(imgPath + imgName));
-        res.data.on('end', () => {
-            console.log(`${imgName} download completed`);
+    // Check if the work's main img is already  existed
+    if (fs.existsSync((imgPath + imgName))) {
+        console.log(`${imgName} already exists`);
+        return imgName
+    }
+    else {
+        axios({
+            method: 'GET',
+            url: url,
+            responseType: 'stream'
         })
-    })
-
-    return imgName
+        .then(async res => {
+            res.data.pipe(fs.createWriteStream(imgPath + imgName));
+            res.data.on('end', () => {
+                console.log(`${imgName} download completed`);
+            })
+        })
+        return imgName
+    }
 }
 
 async function delAll() {
-    // await db('ys').del().truncate();
-    // await db('t_tag').del();
     await db('ys').del().truncate();
     await db('t_tag_id').del().truncate()
     await db('t_tag').del().truncate()
     await db('t_circle').del().truncate()
     return db('ys')
 }
-
-// helper 
-// async function helper(rjcode) {
-//     // const ysRec = await db('ys').where({rj_code : rjcode});
-
-//     // const tagRec = await db('t_tag').select('tag').where({tag_rjcode: rjcode});
-
-//     // if (ysRec.length === 0 && tagRec.length === 0) {
-//     //     return {message: "workNotFound"};
-//     // }
-//     // else {
-//     //     return {work: ysRec, tags: tagRec};
-//     // }
-//     return await db('t_tag_id')
-//     .select('tag_name').join('t_tag', "t_tag_id.id", '=', "t_tag.tag_id")
-//     .where({tag_rjcode: rjcode})
-// }

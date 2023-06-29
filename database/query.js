@@ -36,13 +36,18 @@ async function getFullRecord(rjcode) {
     .join('t_tag', "t_tag_id.id", "=", "t_tag.tag_id")
     .where({tag_rjcode: rjcode})
 
+    const circleRec = await db('ys')
+    .select('circle_name')
+    .join('t_circle', 'ys.circle_id', '=', 't_circle.id')
+    .where({rj_code: rjcode})
+
     // const tagRec = await db('t_tag').select('tag').where({tag_rjcode: rjcode});
 
     if (ysRec.length === 0 && tagRec.length === 0) {
         return {message: "workNotFound"};
     }
     else {
-        return {work: ysRec, tags: tagRec};
+        return {work: ysRec[0], tags: tagRec, circle: circleRec[0]};
     }
 
 }
@@ -69,18 +74,27 @@ async function getWorks(page, isAll) {
         const worksPerPage = 12;
         const totalWorks = await db('ys').count({count: 'rj_code'});
         const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
+
+        // First page
         if (page === '1') {
             const curWorks = await db('ys').orderBy('alt_rj_code', 'asc').limit(worksPerPage).offset(0)
 
             let works = [];
 
+            // Push pagination info first
+            works.push({
+                current_page: Number(page),
+                max_page: totalPage,
+                total_works: totalWorks[0].count
+            });
+
+            // Then push work and tags 
             for (let i = 0; i < curWorks.length; i++) {
                 works.push(await getFullRecord(curWorks[i].rj_code))
             }
-            works.push({max_page: totalPage})
-            works.push({current_page: Number(page)})
             return works
         }
+        // Other page than first page
         else if (Number(page) <= totalPage) {
             // console.log(worksPerPage * (Number(page) - 1));
             const curWorks = await db('ys')
@@ -91,12 +105,18 @@ async function getWorks(page, isAll) {
             //when 3 works per page (2 * (Number(page) - 1) -1)
 
             let works = [];
+            // Push pagination info first
 
+            works.push({
+                current_page: Number(page),
+                max_page: totalPage,
+                total_works: totalWorks[0].count
+            });
+
+            // Then push work and tags 
             for (let i = 0; i < curWorks.length; i++) {
                 works.push(await getFullRecord(curWorks[i].rj_code))
             }
-            works.push({max_page: totalPage})
-            works.push({current_page: Number(page)})
             return works
         }
         else {
