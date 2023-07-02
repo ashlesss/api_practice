@@ -1,3 +1,4 @@
+//cSpell:disable
 const knex = require('knex')
 const config = require('../knexfile')
 const db = knex(config.development)
@@ -28,16 +29,18 @@ async function add() {
     // Test mode 
     // await delAll()
 
-    const rootFolder = '/mnt/hgfs/test/RJ400000/'
+    // const rootFolder = '/mnt/hgfs/test/RJ400000/'
     // const rootFolder = '/mnt/hgfs/test/1/'
+    const rootFolder = '/mnt/hgfs/RJ300000/'
     const folders = await fs.readdirSync(rootFolder);
     let i = 0
     for ( const folder of folders ) {
         if (folder.match(/RJ\d{8}/)) {
-            if (! (await isDuplicate(folder.slice(0, 10)))) {
+            let gb_rjcode = folder.match(/RJ\d{8}/)[0]
+            if (! (await isDuplicate(gb_rjcode))) {
                 const work = {
-                    rjcode: folder.slice(0, 10),
-                    alt_rj_code: Number(folder.slice(2, 10)), 
+                    rjcode: gb_rjcode,
+                    alt_rj_code: Number(gb_rjcode.slice(2, 10)), 
                     work_name: "",
                     work_directory: (rootFolder + folder),
                     circleId: [],
@@ -52,7 +55,10 @@ async function add() {
                 }
 
                 i++;
-                await getWorkMetadata(work.rjcode, work)
+                await getWorkMetadata(work.rjcode, work, i)
+                // .catch(err => {
+                //     console.log(err);
+                // })
                 if ((i % 5) === 0) {
                     console.log("Cooldown 2 sec for every 5 requests");
                     await sleep(2000)
@@ -63,11 +69,13 @@ async function add() {
             }
         }
         else if (folder.match(/RJ\d{6}/)) {
-            // for RJ123456
-            if (!(await isDuplicate(folder.slice(0, 8)))) {
+            // // for RJ123456
+            // console.log(folder.match(/RJ\d{6}/)[0]);
+            let gb_rjcode = folder.match(/RJ\d{6}/)[0]
+            if (!(await isDuplicate(gb_rjcode))) {
                 const work = {
-                    rjcode: folder.slice(0, 8),
-                    alt_rj_code: Number(folder.slice(2, 8)), 
+                    rjcode: gb_rjcode,
+                    alt_rj_code: Number(gb_rjcode.slice(2, 8)), 
                     work_name: "",
                     work_directory: (rootFolder + folder),
                     circleId: [],
@@ -82,7 +90,10 @@ async function add() {
                 }
 
                 i++
-                await getWorkMetadata(work.rjcode, work)
+                await getWorkMetadata(work.rjcode, work, i)
+                // .catch(err => {
+                //     console.log(err);
+                // })
                 if ((i % 5) === 0) {
                     console.log("Cooldown 2 sec for every 5 requests");
                     await sleep(2000)
@@ -101,19 +112,26 @@ async function add() {
 /**
  * 
  * @param {string} rjcode rjcode string
+ * @param {number} numOfWorks number of works at current status
  * @param {object} work object
  */
-async function getWorkMetadata(rjcode , work) {
+async function getWorkMetadata(rjcode , work, numOfWorks) {
 
     // Fetch metadata without dl_count
     const metadata = await fetch(`https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`, {
         method: 'GET'
+    })
+    .catch(err => {
+        console.log(`Fetching meta data error: ${err}`);
     })
     const metaJson = await metadata.json()
 
     // Fetch work's sales info
     const salesinfo = await fetch(`https://www.dlsite.com/maniax-touch/product/info/ajax?product_id=${rjcode}`, {
         method: 'GET'
+    })
+    .catch(err => {
+        console.log(`Fetching sales info error: ${err}`);
     })
     const salesJson = await salesinfo.json()
     // console.log(salesJson[rjcode]);
@@ -151,6 +169,9 @@ async function getWorkMetadata(rjcode , work) {
             tag_id: metaJson[0].genres[i].id,
             tag_rjcode: rjcode
         })
+        .catch(err => {
+            console.log(err);
+        })
     }
 
     // // Insert work circle
@@ -159,10 +180,16 @@ async function getWorkMetadata(rjcode , work) {
     .insert({circle_name: metaJson[0].maker_name})
     .onConflict('circle_name')
     .ignore()
+    .catch(err => {
+        console.log(err);
+    })
 
     let circleId = await db('t_circle')
     .select('id')
     .where({circle_name: metaJson[0].maker_name})
+    .catch(err => {
+        console.log(err);
+    })
 
     work.circleId = circleId[0].id
 
@@ -208,6 +235,7 @@ async function getWorkMetadata(rjcode , work) {
         console.log(err);
     })
 
+    console.log(`${rjcode} records added to database. Records: ${numOfWorks}`);
 }
 
 // TODO

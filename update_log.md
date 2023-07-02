@@ -1,8 +1,19 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 7/2/2023
+
+### In `./database/ops.js`
+1. Fix if folder name has words in front of RJ code that cause program can't get the correct RJ code
+to complete the operation which also causes program to crash. (BUG)
+2. Add *records add completed* prompts.
+
+### TODO
+1. add *try...catch* to the metadata function
+2. add more error prompts which can be helpful if errors pop up
+
 ## 6/28/2023
 
-### In `./database/query/query.js`
+### In `./database/query.js`
 1. Extract elements from array so that front-end can use that data directly.
 
 ### In `./routes/db_query.js`
