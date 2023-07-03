@@ -1,5 +1,14 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 7/3/2023
+
+### In `./database/ops.js`
+1. Put all the database insertion into `transaction`
+2. Add more error prompts 
+
+### Database
+1. Change self-increment id to circle id from DLsite in `t_circle` table
+
 ## 7/2/2023
 
 ### In `./database/ops.js`

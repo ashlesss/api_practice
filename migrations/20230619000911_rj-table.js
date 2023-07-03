@@ -1,3 +1,4 @@
+//cSpell:disable
 /**
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
@@ -35,7 +36,7 @@ exports.up = function(knex) {
       tbl.primary(['tag_id', 'tag_rjcode'])
     })
     .createTable('t_circle', tbl => {
-      tbl.increments()
+      tbl.integer('id')
       tbl.string('circle_name').notNullable().primary()
     })
   };
