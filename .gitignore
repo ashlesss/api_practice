@@ -6,4 +6,6 @@ static
 
 .env
 
-scraper/out.txt
+*/out*.txt
+
+config.json

@@ -1,4 +1,5 @@
 // Update with your config settings.
+const config = require('./config.json')
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
@@ -8,7 +9,7 @@ module.exports = {
   development: {
     client: 'sqlite3',
     connection: {
-      filename: './ys.sqlite3'
+      filename: config.db_path
     },
     useNullAsDefault: true,
   },

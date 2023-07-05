@@ -1,71 +1,86 @@
 //cSpell:disable
 const knex = require('knex')
 const config = require('../knexfile')
-const { promises, truncate } = require('fs-extra')
 const db = knex(config.development)
+const { scWorkAllData } = require('../scraper/dlsite')
 
+/**
+ * This method will not check for the repeat rjcode.
+ * 
+ * Need to check the duplicate rjcode before using 
+ * this method.
+ * @param {object} work Work object
+ * @returns 
+ */
+const insertWorkTodb = work => db.transaction(trx => 
+    trx('ys')
+    .insert({
+        rj_code: work.workno,
+        alt_rj_code: work.alt_rj_code,
+        work_title: work.work_name,
+        work_directory: '/something',
+        work_main_img: work.main_img,
+        circle_id: work.circle_id,
+        nsfw: work.nsfw,
+        official_price: work.official_price,
+        dl_count: work.dl_count,
+        regist_date: work.regist_date,
+        rate_count: work.rate_count,
+        rate_average_2dp: work.rate_average_2dp,
+        rate_count_detail: work.rate_count_detail
+    })
+    .onConflict().ignore()
+    .then(() => {
+        
+        const promises = []
 
-module.exports = {
-    insertMeatadata
-}
+        // console.log("RJCODE: " + work.workno);
 
-async function insertMeatadata(metajson, salesjson, workDir, imgName) {
-    try {
-        await db.transaction(async trx => {
-            // console.log(salesjson);
-            await trx('ys')
-            .insert({
-                rj_code: metajson[0].workno,
-                alt_rj_code: Number(metajson[0].workno.slice(2)), 
-                work_title: metajson[0].work_name, 
-                work_directory: workDir,
-                work_main_img: imgName,
-
-                circle_id: Number(metajson[0].circle_id.slice(2)),
-                nsfw: isNsfw(metajson[0].age_category_string),
-                official_price: metajson[0].official_price,
-                regist_date: metajson[0].regist_date,
-                dl_count: salesjson[metajson[0].workno].dl_count,
-                rate_count: salesjson[metajson[0].workno].rate_count,
-                rate_average_2dp: salesjson[metajson[0].workno].rate_average_2dp,
-                rate_count_detail: metajson[0].rate_count_detail,
-            })
-            .onConflict().ignore()
-            // console.log(metajson[0].genres.length);
-    
-            for(let i = 0; i < metajson[0].genres.length; i++) {
-                await trx('t_tag_id')
+        for (let i = 0; i < work.genres.length; i++) {
+            promises.push(
+                trx('t_tag_id')
                 .insert({
-                    id: metajson[0].genres[i].id,
-                    tag_name: metajson[0].genres[i].name
+                    id: work.genres[i].id,
+                    tag_name: work.genres[i].name
                 })
                 .onConflict().ignore()
+                .then(() => 
+                    trx('t_tag')
+                    .insert({
+                        tag_id: work.genres[i].id,
+                        tag_rjcode: work.workno
+                    })
+                )
+            )
+        }
 
-                await trx('t_tag')
-                .insert({
-                    tag_id: metajson[0].genres[i].id,
-                    tag_rjcode: metajson[0].workno
-                })
-            }
-
-            await trx('t_circle')
+        promises.push(
+            trx('t_circle')
             .insert({
-                id: Number(metajson[0].circle_id.slice(2)),
-                circle_name: metajson[0].maker_name
+                id: work.circle_id,
+                circle_name: work.maker_name
             })
-            .onConflict('id').ignore()
-        })
-    } catch(e) {
-        console.log(e);
-    }
-    
+            .onConflict('circle_name').ignore()
+        )
+
+        return Promise.all(promises).then(() => trx)
+    })
+)
+
+async function getWorksData(rjcode) {
+    const workdata = await scWorkAllData(rjcode)
+    return insertWorkTodb(workdata)
+    .then(() => {
+        console.log(`${rjcode} has been added to db`);
+        return 'added'
+    })
+    .catch(err => {
+        // console.log(`Adding ${rjcode} to db failed with error message: ${err}`)
+        // console.log(err.message);
+        return err.message
+    })
 }
 
-function isNsfw(nsfw) {
-    if (nsfw === 'adult') {
-        return true
-    }
-    else {
-        return false
-    }
-}
+module.exports = {
+    getWorksData
+};

@@ -1,5 +1,19 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 7/5/2023
+
+### In `./database/metadata/metadata.js`
+1. Make transaction more reliable 
+2. Add a async function that can be used for both getting work's metadata.and insert that work and its metadata into database.
+
+### In `./database/ops.js`
+1. Use `getWorksData` to fetch data and insert to database.
+2. Refactor the error prompts. Works that made error will be collected to an array with work's RJcode and error message attached.
+
+### In `./scraper/dlsite.js`
+1. Contain all the fetching methods.
+2. An async method that will fetch and return a work's metadata and salesdata.
+
 ## 7/3/2023
 
 ### In `./database/ops.js`
@@ -17,8 +31,8 @@ to complete the operation which also causes program to crash. (BUG)
 2. Add *records add completed* prompts.
 
 ### TODO
-1. add *try...catch* to the metadata function
-2. add more error prompts which can be helpful if errors pop up
+~~1. add *try...catch* to the metadata function~~ <br>
+~~2. add more error prompts which can be helpful if errors pop up~~
 
 ## 6/28/2023
 

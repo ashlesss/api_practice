@@ -1,13 +1,14 @@
 //cSpell:disable
 const axios = require('axios');
 const fs = require("fs-extra");
+const config = require('../config.json')
 
 /**
  * 
  * @param {string} rjcode RJ code
  * @returns Object work 
  */
-const scGetMetadata = (rjcode) => new Promise((resolve, reject) => {
+const scGetMetadata = rjcode => new Promise((resolve, reject) => {
     url = `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`;
     work = {};
 
@@ -25,12 +26,14 @@ const scGetMetadata = (rjcode) => new Promise((resolve, reject) => {
         work.workno = mdata[0].workno;
         work.alt_rj_code = Number(mdata[0].workno.slice(2))
         work.work_name = mdata[0].work_name;
-        work.main_img = mdata[0].image_main.file_name;
+        // work.main_img = mdata[0].image_main.file_name;
         work.circle_id = Number(mdata[0].circle_id.slice(2))
         work.nsfw = (mdata[0].age_category_string === 'adult') ? true: false;
         work.official_price = mdata[0].official_price;
         work.regist_date = mdata[0].regist_date;
         work.rate_count_detail = mdata[0].rate_count_detail;
+        work.genres = mdata[0].genres
+        work.maker_name = mdata[0].maker_name
         resolve(work)
     })
     .catch(err => {
@@ -73,7 +76,7 @@ const scGetSaledata = rjcode => new Promise((resolve, reject) => {
  * @param {string} rjcode 
  * @return Img name
  */
-const scGetImg = (rjcode) => new Promise((resolve, reject) => {
+const scGetImg = rjcode => new Promise((resolve, reject) => {
     let sid;
     if (rjcode.length === 8) {
         let nrj = Number(rjcode.slice(2))
@@ -88,11 +91,13 @@ const scGetImg = (rjcode) => new Promise((resolve, reject) => {
     // resolve(sid)
 
     // Hard coded img path
-    imgPath = `../static/img/`
+    imgPath = config.img_folder
 
-    if (fs.existsSync(`${imgPath}RJ${sid}_img_main.jpg`)) {
-        console.log(`RJ${sid}_img_main.jpg already exists`);
-        resolve(`RJ${sid}_img_main.jpg`);
+    if (fs.existsSync(`${imgPath}${rjcode}_img_main.jpg`)) {
+        console.log(`${rjcode}_img_main.jpg already exists`);
+        resolve({
+            main_img: `${rjcode}_img_main.jpg`
+        });
     }
     else {
         axios({
@@ -101,10 +106,12 @@ const scGetImg = (rjcode) => new Promise((resolve, reject) => {
             responseType: 'stream'
         })
         .then(async res => {
-            res.data.pipe(fs.createWriteStream(`${imgPath}RJ${sid}_img_main.jpg`));
+            res.data.pipe(fs.createWriteStream(`${imgPath}${rjcode}_img_main.jpg`));
             res.data.on('end', () => {
-                console.log(`RJ${sid}_img_main.jpg download completed.`);
-                resolve(`RJ${sid}_img_main.jpg`);
+                console.log(`${rjcode}_img_main.jpg download completed.`);
+                resolve({
+                    main_img: `${rjcode}_img_main.jpg`
+                });
             })
         })
         .catch(err => {
@@ -112,6 +119,30 @@ const scGetImg = (rjcode) => new Promise((resolve, reject) => {
         })
     }
 })
+
+/**
+ * 
+ * @param {string} rjcode RJcode
+ * @returns Object work's all metadata, saledata, cover img name 
+ */
+async function scWorkAllData(rjcode) {
+    let work = {}
+    const tmp = await scGetMetadata(rjcode)
+    const tmp1 = await scGetSaledata(rjcode)
+    const tmp2 = await scGetImg(rjcode)
+    return Object.assign(work, tmp, tmp1, tmp2)
+}
+
+module.exports = {
+    scGetMetadata,
+    scGetSaledata,
+    scGetImg,
+    scWorkAllData
+}
+
+// scWorkAllData('RJ305131').then(msg => {
+//     console.log(msg.isCompleted);
+// })
 
 // console.log(scGetImg('RJ080256'));
 
