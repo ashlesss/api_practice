@@ -32,18 +32,15 @@ async function add() {
     const rootFolder = '/mnt/hgfs/test/2/'
     // const rootFolder = '/mnt/hgfs/RJ300000/'
     const folders = fs.readdirSync(rootFolder);
-    // const test = 1
     let i = 0
     let errorList = []
     for ( const folder of folders ) {
         if (folder.match(/RJ\d{8}/)) {
             let gb_rjcode = folder.match(/RJ\d{8}/)[0]
             if (! (await isDuplicate(gb_rjcode))) {
-            // if (test === 1) {
                 await md.getWorksData(gb_rjcode).then(res => {
                     if (res !== 'added') {
                         errorList.push({RJcode: gb_rjcode, errMsg: res})
-                        // console.log(err);
                     }
                     console.log(res);
                 })
@@ -64,21 +61,16 @@ async function add() {
             }
         }
         else if (folder.match(/RJ\d{6}/)) {
-            // // for RJ123456
-            // console.log(folder.match(/RJ\d{6}/)[0]);
             let gb_rjcode = folder.match(/RJ\d{6}/)[0]
             if (!(await isDuplicate(gb_rjcode))) {
-            // if (test === 1) {
                 await md.getWorksData(gb_rjcode).then(res => {
                     if (res !== 'added') {
                         errorList.push({RJcode: gb_rjcode, errMsg: res})
-                        // console.log(err);
                     }
                     console.log(res);
                 })
                 .catch(err => {
                     errorList.push({RJcode: gb_rjcode, errMsg: err.message})
-                    // console.log(errorList);
                     console.log(err);
                 })
 
@@ -94,7 +86,6 @@ async function add() {
             }
         }
     }
-    // return await db('ys').count({count: 'rj_code'})
     if (errorList.length > 0) {
         return {
             workCount: await db('ys').count({count: 'rj_code'}),
@@ -111,52 +102,3 @@ async function delAll() {
     await db('t_circle').del().truncate()
     return db('ys')
 }
-
-// async function test_add() {
-//     const rootFolder = '/mnt/hgfs/test/2/'
-//     const folders = fs.readdirSync(rootFolder);
-//     let errorList = []
-
-//     for ( const folder of folders ) {
-//         if (folder.match(/RJ\d{8}/)) {
-//             let gb_rjcode = folder.match(/RJ\d{8}/)[0]
-//             await md.getWorksData(gb_rjcode).then(res => {
-//                 console.log(res);
-//             })
-//             .catch(err => {
-//                 console.log(err);
-//             })
-//         }
-//         else if (folder.match(/RJ\d{6}/)) {
-//             let gb_rjcode = folder.match(/RJ\d{6}/)[0]
-//             await md.getWorksData(gb_rjcode).then(res => {
-//                 if (res !== 'added') {
-//                     errorList.push({RJcode: gb_rjcode, errMsg: res})
-//                     // console.log(err);
-//                 }
-//                 console.log(res);
-//             })
-//             .catch(err => {
-//                 errorList.push({RJcode: gb_rjcode, errMsg: err.message})
-//                 console.log(err);
-//             })
-//         }
-//         else {
-//             continue;
-//         }
-//     }
-
-//     if (errorList.length > 0) {
-//         return {
-//             workCount: await db('ys').count({count: 'rj_code'}),
-//             errorList: errorList
-//         }
-//     }
-//     return await db('ys').count({count: 'rj_code'})
-// }
-
-// async function test1() {
-//     console.log(await test_add());
-// }
-
-// test1()

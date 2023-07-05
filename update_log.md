@@ -4,7 +4,7 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 
 ### In `./database/metadata/metadata.js`
 1. Make transaction more reliable 
-2. Add a async function that can be used for both getting work's metadata.and insert that work and its metadata into database.
+2. Add a ~~async~~ method that can be used for both getting work's metadata.and insert that work and its metadata into database.
 
 ### In `./database/ops.js`
 1. Use `getWorksData` to fetch data and insert to database.
@@ -12,7 +12,8 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 
 ### In `./scraper/dlsite.js`
 1. Contain all the fetching methods.
-2. An async method that will fetch and return a work's metadata and salesdata.
+2. A ~~async~~ method `scWorkAllData` that will fetch and return a work's metadata and salesdata.
+3. Fix variable(`url`, `work`, `sale`) didn't declare its type when created in `scGetMetadata`, `scGetSaledata`. And they cause to keep returning the same piece of data no matter what parameters are being put in.
 
 ## 7/3/2023
 

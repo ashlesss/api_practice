@@ -35,19 +35,19 @@ const insertWorkTodb = work => db.transaction(trx =>
         const promises = []
 
         // console.log("RJCODE: " + work.workno);
-
-        for (let i = 0; i < work.genres.length; i++) {
+        const genres = JSON.parse(work.genres)
+        for (let i = 0; i < genres.length; i++) {
             promises.push(
                 trx('t_tag_id')
                 .insert({
-                    id: work.genres[i].id,
-                    tag_name: work.genres[i].name
+                    id: genres[i].id,
+                    tag_name: genres[i].name
                 })
                 .onConflict().ignore()
                 .then(() => 
                     trx('t_tag')
                     .insert({
-                        tag_id: work.genres[i].id,
+                        tag_id: genres[i].id,
                         tag_rjcode: work.workno
                     })
                 )
@@ -67,16 +67,24 @@ const insertWorkTodb = work => db.transaction(trx =>
     })
 )
 
-async function getWorksData(rjcode) {
-    const workdata = await scWorkAllData(rjcode)
-    return insertWorkTodb(workdata)
-    .then(() => {
-        console.log(`${rjcode} has been added to db`);
-        return 'added'
+/**
+ * Fetching work's metadata, add work and its metadata into the data base.
+ * @param {string} rjcode 
+ * @returns added if success or return err message
+ */
+const getWorksData = rjcode => {
+    return scWorkAllData(rjcode)
+    .then(workdata => {
+        return insertWorkTodb(workdata)
+        .then(() => {
+            console.log(`${rjcode} has been added to db`);
+            return 'added'
+        })
+        .catch(err => {
+            return err.message
+        })
     })
     .catch(err => {
-        // console.log(`Adding ${rjcode} to db failed with error message: ${err}`)
-        // console.log(err.message);
         return err.message
     })
 }

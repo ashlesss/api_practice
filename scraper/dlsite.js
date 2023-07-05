@@ -8,9 +8,9 @@ const config = require('../config.json')
  * @param {string} rjcode RJ code
  * @returns Object work 
  */
-const scGetMetadata = rjcode => new Promise((resolve, reject) => {
-    url = `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`;
-    work = {};
+const scGetMetadata = rjcode => new Promise(async (resolve, reject) => {
+    const url = `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`;
+    let work = {};
 
     axios({
         method: 'GET',
@@ -32,8 +32,11 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
         work.official_price = mdata[0].official_price;
         work.regist_date = mdata[0].regist_date;
         work.rate_count_detail = mdata[0].rate_count_detail;
-        work.genres = mdata[0].genres
+        work.genres = JSON.stringify(mdata[0].genres)
         work.maker_name = mdata[0].maker_name
+        // mdata[0].genres.forEach(tag => {
+        //     work.genres.push(tag)
+        // })
         resolve(work)
     })
     .catch(err => {
@@ -47,8 +50,8 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
  * @returns Object sales data
  */
 const scGetSaledata = rjcode => new Promise((resolve, reject) => {
-    url = `https://www.dlsite.com/maniax-touch/product/info/ajax?product_id=${rjcode}`;
-    sale = {}
+    const url = `https://www.dlsite.com/maniax-touch/product/info/ajax?product_id=${rjcode}`;
+    let sale = {}
 
     axios({
         method: 'GET',
@@ -125,12 +128,16 @@ const scGetImg = rjcode => new Promise((resolve, reject) => {
  * @param {string} rjcode RJcode
  * @returns Object work's all metadata, saledata, cover img name 
  */
-async function scWorkAllData(rjcode) {
-    let work = {}
-    const tmp = await scGetMetadata(rjcode)
-    const tmp1 = await scGetSaledata(rjcode)
-    const tmp2 = await scGetImg(rjcode)
-    return Object.assign(work, tmp, tmp1, tmp2)
+const scWorkAllData = rjcode => {
+    return Promise.all([
+        scGetMetadata(rjcode),
+        scGetSaledata(rjcode),
+        scGetImg(rjcode)
+    ])
+    .then(res => {
+        let work = {}
+        return Object.assign(work, res[0], res[1], res[2])
+    })
 }
 
 module.exports = {
@@ -139,30 +146,3 @@ module.exports = {
     scGetImg,
     scWorkAllData
 }
-
-// scWorkAllData('RJ305131').then(msg => {
-//     console.log(msg.isCompleted);
-// })
-
-// console.log(scGetImg('RJ080256'));
-
-// scGetImg('RJ343788').then(data => {
-//     console.log(data);
-// })
-// .catch(err => {
-//     console.log(`scGetImg error: ${err}`);
-// })
-
-// scGetMetadata('RJ343788').then(data => {
-//     console.log(data);
-// })
-// .catch(err => {
-//     console.log(`scGetMetadata error: ${err}`);
-// })
-
-// scGetSaledata('RJ343788').then(data => {
-//     console.log(data);
-// })
-// .catch(err => {
-//     console.log(`scGetSaledata error: ${err}`);
-// })
