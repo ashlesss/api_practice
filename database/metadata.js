@@ -2,7 +2,7 @@
 const knex = require('knex')
 const config = require('../knexfile')
 const db = knex(config.development)
-const { scWorkAllData } = require('../scraper/dlsite')
+const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
 
 /**
  * This method will not check for the repeat rjcode.
@@ -18,7 +18,7 @@ const insertWorkTodb = work => db.transaction(trx =>
         rj_code: work.workno,
         alt_rj_code: work.alt_rj_code,
         work_title: work.work_name,
-        work_directory: '/something',
+        work_directory: '/something', //Need to update
         work_main_img: work.main_img,
         circle_id: work.circle_id,
         nsfw: work.nsfw,
@@ -89,6 +89,45 @@ const getWorksData = rjcode => {
     })
 }
 
+/**
+ * Insert updated saledata into the database for
+ * the requested RJcode
+ * @param {string} rjcode 
+ * @param {object} saledata 
+ */
+const updateWorkSaledata = (rjcode, saledata) => 
+    db.transaction(async trx => {
+        await trx('ys')
+        .where({rj_code: rjcode})
+        .update({
+            dl_count: saledata.dl_count,
+            rate_count: saledata.rate_count,
+            rate_average_2dp: saledata.rate_average_2dp,
+            rate_count_detail: saledata.rate_count_detail
+        })
+    })
+
+/**
+ * Update saledata: dl_count, rate_count, rate_count_detail, rate_average_2dp
+ * @param {string} rjcode RJcode 
+ * @returns updated when success, error message when fail.
+ */
+const updateSaledata = rjcode => {
+    return scGetSaledata(rjcode)
+    .then(saledata => {
+        // console.log(saledata);
+        return updateWorkSaledata(rjcode, saledata)
+        .then(() => {
+            return 'updated'
+        })
+    })
+    .catch(err => {
+        return(`Updating saledata faile: ${err.message}`);
+    })
+}
+
 module.exports = {
-    getWorksData
+    getWorksData,
+    updateSaledata,
+    updateWorkSaledata
 };

@@ -8,7 +8,7 @@ const config = require('../config.json')
  * @param {string} rjcode RJ code
  * @returns Object work 
  */
-const scGetMetadata = rjcode => new Promise(async (resolve, reject) => {
+const scGetMetadata = rjcode => new Promise((resolve, reject) => {
     const url = `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`;
     let work = {};
 
@@ -26,17 +26,13 @@ const scGetMetadata = rjcode => new Promise(async (resolve, reject) => {
         work.workno = mdata[0].workno;
         work.alt_rj_code = Number(mdata[0].workno.slice(2))
         work.work_name = mdata[0].work_name;
-        // work.main_img = mdata[0].image_main.file_name;
         work.circle_id = Number(mdata[0].circle_id.slice(2))
         work.nsfw = (mdata[0].age_category_string === 'adult') ? true: false;
         work.official_price = mdata[0].official_price;
-        work.regist_date = mdata[0].regist_date;
-        work.rate_count_detail = mdata[0].rate_count_detail;
+        work.regist_date = mdata[0].regist_date.slice(0, 10);
+        // work.rate_count_detail = mdata[0].rate_count_detail;
         work.genres = JSON.stringify(mdata[0].genres)
         work.maker_name = mdata[0].maker_name
-        // mdata[0].genres.forEach(tag => {
-        //     work.genres.push(tag)
-        // })
         resolve(work)
     })
     .catch(err => {
@@ -66,6 +62,7 @@ const scGetSaledata = rjcode => new Promise((resolve, reject) => {
         }
         sale.dl_count = data[rjcode].dl_count;
         sale.rate_count = data[rjcode].rate_count;
+        sale.rate_count_detail = JSON.stringify(data[rjcode].rate_count_detail); 
         sale.rate_average_2dp = data[rjcode].rate_average_2dp;
         resolve(sale)
     })

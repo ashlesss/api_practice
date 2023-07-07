@@ -1,0 +1,4 @@
+{
+    "img_folder": "Absolute_path",
+    "db_path": "Absolute_path/dbName.sqlite3"
+}

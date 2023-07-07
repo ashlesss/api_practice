@@ -2,6 +2,9 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 
 ## 7/5/2023
 
+### Push test files
+1. Push test files to repo.
+
 ### In `./database/metadata/metadata.js`
 1. Make transaction more reliable 
 2. Add a ~~async~~ method that can be used for both getting work's metadata.and insert that work and its metadata into database.
@@ -14,6 +17,7 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 1. Contain all the fetching methods.
 2. A ~~async~~ method `scWorkAllData` that will fetch and return a work's metadata and salesdata.
 3. Fix variable(`url`, `work`, `sale`) didn't declare its type when created in `scGetMetadata`, `scGetSaledata`. And they cause to keep returning the same piece of data no matter what parameters are being put in.
+4. Switch `rate_count_detail` source from DLsite's json api to ajax api in order to stay in the same data type with `updateSaledata` method.
 
 ## 7/3/2023
 
