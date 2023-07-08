@@ -5,20 +5,21 @@ const db = knex(config.development)
 const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
 
 /**
- * This method will not check for the repeat rjcode.
+ * This method will not check for the duplicate rjcode.
+ * If duplicate work in db, it will ignore the work.
+ * Work inside the db will stay untouched.
  * 
- * Need to check the duplicate rjcode before using 
- * this method.
  * @param {object} work Work object
+ * @param {string} workdir work's directory
  * @returns 
  */
-const insertWorkTodb = work => db.transaction(trx => 
+const insertWorkTodb = (work, workdir) => db.transaction(trx => 
     trx('ys')
     .insert({
         rj_code: work.workno,
         alt_rj_code: work.alt_rj_code,
         work_title: work.work_name,
-        work_directory: '/something', //Need to update
+        work_directory: workdir, 
         work_main_img: work.main_img,
         circle_id: work.circle_id,
         nsfw: work.nsfw,
@@ -50,6 +51,7 @@ const insertWorkTodb = work => db.transaction(trx =>
                         tag_id: genres[i].id,
                         tag_rjcode: work.workno
                     })
+                    .onConflict().ignore()
                 )
             )
         }
@@ -69,15 +71,16 @@ const insertWorkTodb = work => db.transaction(trx =>
 
 /**
  * Fetching work's metadata, add work and its metadata into the data base.
- * @param {string} rjcode 
+ * @param {string} rjcode RJcode
+ * @param {string} workdir work's directory
  * @returns added if success or return err message
  */
-const getWorksData = rjcode => {
+const getWorksData = (rjcode, workdir) => {
     return scWorkAllData(rjcode)
     .then(workdata => {
-        return insertWorkTodb(workdata)
+        return insertWorkTodb(workdata, workdir)
         .then(() => {
-            console.log(`${rjcode} has been added to db`);
+            // console.log(`${rjcode} has been added to db`);
             return 'added'
         })
         .catch(err => {

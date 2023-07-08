@@ -1,5 +1,26 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 7/8/2023
+
+### In `./filesystem/`
+1. Create `scanner` and `scanModule` to scan all the works in the given directories.
+2. Test `process.send()`.
+3. Able to remove duplicated works in scan queue and able to handle non-directory given by the users.
+4. More feedback prompts with statistical info on scan progress.
+
+### In `./database/`
+1. `ops.js` and `opsTest.js` have been **deprecated**. Program will not use these to scan all the work in the given directories
+instead of using scanner in `./filesystem`.
+2. Add `updateSaledata` method in order to update work's sales data.
+
+## 7/7/2023 
+
+### In `./api/server.js`
+1. Export api routes for `index.js` to initialize the server.
+
+### In `./index.js`
+1. Expose apis and create Websocket.
+
 ## 7/5/2023
 
 ### Push test files
@@ -7,7 +28,7 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 
 ### In `./database/metadata/metadata.js`
 1. Make transaction more reliable 
-2. Add a ~~async~~ method that can be used for both getting work's metadata.and insert that work and its metadata into database.
+2. Add a ~~async~~ method that can be used for both getting work's metadata, and insert that work and its metadata into database.
 
 ### In `./database/ops.js`
 1. Use `getWorksData` to fetch data and insert to database.

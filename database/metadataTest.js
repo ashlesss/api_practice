@@ -1,7 +1,7 @@
 //cSpell:disable
 const md = require('./metadata')
 
-// md.getWorksData('RJ343788')
+// md.getWorksData('RJ343788', '/mnt/hgfs/test/2/')
 // .then(res => {
 //     // console.log(res);
 //     if (res === 'added') {
@@ -16,15 +16,26 @@ const md = require('./metadata')
 //     console.log(`getWorkData failed: ${err}`);
 // })
 
-md.updateSaledata('RJ343788')
-.then(res =>{ 
-    if (res === 'updated') {
-        console.log(res);
-    }
-    else {
-        console.log(`Update failed: ${res}`);
-    }
+const list = ['RJ343788', 'RJ306114']
+
+const promises = list.map(rjcode => {
+    md.getWorksData(rjcode, "/something")
+    .then(result => {
+        console.log(result);
+    })
 })
+
+Promise.all(promises)
+
+// md.updateSaledata('RJ343788')
+// .then(res =>{ 
+//     if (res === 'updated') {
+//         console.log(res);
+//     }
+//     else {
+//         console.log(`Update failed: ${res}`);
+//     }
+// })
 
 // saledata = {
 //     dl_count: '5400',
