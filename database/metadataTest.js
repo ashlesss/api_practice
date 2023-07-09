@@ -16,16 +16,16 @@ const md = require('./metadata')
 //     console.log(`getWorkData failed: ${err}`);
 // })
 
-const list = ['RJ01003143', 'RJ01019666', 'RJ01018106']
+// const list = ['RJ01003143', 'RJ01019666', 'RJ01018106']
 
-const promises = list.map(rjcode => {
-    md.getWorksData(rjcode, "/something")
-    .then(result => {
-        console.log(result);
-    })
-})
+// const promises = list.map(rjcode => {
+//     md.getWorksData(rjcode, "/something")
+//     .then(result => {
+//         console.log(result);
+//     })
+// })
 
-Promise.all(promises)
+// Promise.all(promises)
 
 // md.updateSaledata('RJ343788')
 // .then(res =>{ 
@@ -48,3 +48,5 @@ Promise.all(promises)
 // .then(res => {
 //     console.log(res);
 // })
+
+// md.updateWorkDir('RJ01018106', '/path_changed')

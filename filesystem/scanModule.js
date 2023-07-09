@@ -2,7 +2,6 @@ const fs = require("fs-extra")
 const md = require('../database/metadata')
 const { prcSend } = require("./utils/prcSend")
 const config = require('../config.json')
-const database = require('../database/metadata')
 const promiseLimit = require('promise-limit')
 
 const invalid = []
@@ -123,10 +122,13 @@ const uniqueList = workList => {
     rootFolder: root folder path,
     name: name of the folder
    },
+
+ * Process folder and if the same record detected in the db, no matter if the work's path changes,
+ * update that work's path.
  * @returns 'added' when work added to db successfully, 'existed' when work exists in db, 
-   and Error message when failed
+   and Error message when failed.
  */
-const processFolder = folder => database.db('ys')
+const processFolder = folder => md.db('ys')
 .select('rj_code')
 .where({rj_code: folder.rjcode})
 .count({count: '*'})
@@ -144,6 +146,7 @@ const processFolder = folder => database.db('ys')
         })
     }
     else {
+        md.updateWorkDir(folder.rjcode, folder.rootFolder)
         return 'existed'
     }
 })
@@ -186,7 +189,7 @@ const performScan = rootFolders => {
                 count.added++
             }
             else if (result === 'existed') {
-                prcSend(`${folder.rjcode} already existed.`)
+                prcSend(`${folder.rjcode} already existed. Work's path updated.`)
                 count.existed++
             }
             else {

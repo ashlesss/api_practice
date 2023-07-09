@@ -129,9 +129,24 @@ const updateSaledata = rjcode => {
     })
 }
 
+/**
+ * 
+ * @param {string} rjcode RJ code
+ * @param {string} newDir Work's new directory 
+ * @returns 
+ */
+const updateWorkDir = (rjcode, newDir) => db.transaction(trx => 
+    trx('ys')
+    .update({
+        work_directory: newDir
+    })
+    .where({rj_code: rjcode})
+)
+
 module.exports = {
     getWorksData,
     updateSaledata,
     updateWorkSaledata,
-    db
+    db,
+    updateWorkDir,
 };

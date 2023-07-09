@@ -15,8 +15,14 @@ will get the work's image as expected.
 3. Send invalid work/path list to parent to remind users the path is not a directory or a work with invalid RJ code.
 4. Create a util `prcSend.js` to help child process send message to parent process.
 
+### In `./database/`
+1. Add `updateWorkDir` method in `metadata.js` to update work's directory if a work already existed in the database.
+2. `worksPerPage` variable can be set in the config file. 
+
 ### TODO
-~~1. Need to check if the user provided RJ code is parent RJ code of the work in DLsite, if not, need to redirect the metadata request to work's parent RJ code.~~(completed)
+1. ~~Need to check if the user provided RJ code is parent RJ code of the work in DLsite, if not, need to redirect the metadata request to work's parent RJ code.~~(completed)
+2. Add VAs to the database.
+3. Add more filter options to api. Such as sort with tags/va/circle etc.
 
 ## 7/8/2023
 
@@ -75,8 +81,8 @@ to complete the operation which also causes program to crash. (BUG)
 2. Add *records add completed* prompts.
 
 ### TODO
-~~1. add *try...catch* to the metadata function~~ (completed)<br>
-~~2. add more error prompts which can be helpful if errors pop up~~(completed)
+1. ~~add *try...catch* to the metadata function~~ (completed)
+2. ~~add more error prompts which can be helpful if errors pop up~~(completed)
 
 ## 6/28/2023
 

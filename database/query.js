@@ -1,6 +1,7 @@
 const knex = require('knex')
 const config = require('../knexfile')
 const db = knex(config.development)
+const Config = require('../config.json')
 // const fs = require("fs-extra")
 // const axios = require('axios')
 // const path = require('node:path');
@@ -71,7 +72,7 @@ async function getWorks(page, isAll) {
     }
     else {
         // console.log(page); // String
-        const worksPerPage = 12;
+        const worksPerPage = Config.worksPerPage;
         const totalWorks = await db('ys').count({count: 'rj_code'});
         const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
 
