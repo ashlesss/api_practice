@@ -21,7 +21,7 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
     })
     .then(mdata => {
         if (mdata.length === 0) {
-            reject(new Error(`No data returned by RJcode: ${rjcode}`))
+            reject(new Error(`No metadata returned by RJcode: ${rjcode}`))
         }
         work.workno = mdata[0].workno;
         work.alt_rj_code = Number(mdata[0].workno.slice(2))
@@ -58,7 +58,7 @@ const scGetSaledata = rjcode => new Promise((resolve, reject) => {
     })
     .then(data => {
         if (!data[rjcode]) {
-            reject(new Error(`No data returned by RJcode: ${rjcode}`))
+            reject(new Error(`No salesdata returned by RJcode: ${rjcode}`))
         }
         sale.dl_count = data[rjcode].dl_count;
         sale.rate_count = data[rjcode].rate_count;
@@ -89,12 +89,13 @@ const scGetImg = rjcode => new Promise((resolve, reject) => {
         sid = (`00000000${tmp}`).slice(-8)
     }
     // resolve(sid)
+    // console.log(sid);
 
     // Hard coded img path
     imgPath = config.img_folder
 
     if (fs.existsSync(`${imgPath}${rjcode}_img_main.jpg`)) {
-        console.log(`${rjcode}_img_main.jpg already exists`);
+        // console.log(`${rjcode}_img_main.jpg already exists`);
         resolve({
             main_img: `${rjcode}_img_main.jpg`
         });
@@ -105,7 +106,7 @@ const scGetImg = rjcode => new Promise((resolve, reject) => {
             url: `https://img.dlsite.jp/modpub/images2/work/doujin/RJ${sid}/${rjcode}_img_main.jpg`,
             responseType: 'stream'
         })
-        .then(async res => {
+        .then(res => {
             res.data.pipe(fs.createWriteStream(`${imgPath}${rjcode}_img_main.jpg`));
             res.data.on('end', () => {
                 console.log(`${rjcode}_img_main.jpg download completed.`);
@@ -113,6 +114,7 @@ const scGetImg = rjcode => new Promise((resolve, reject) => {
                     main_img: `${rjcode}_img_main.jpg`
                 });
             })
+            
         })
         .catch(err => {
             reject(`Download ${rjcode} cover failed with message: ${err.message}`);
@@ -123,7 +125,7 @@ const scGetImg = rjcode => new Promise((resolve, reject) => {
 /**
  * 
  * @param {string} rjcode RJcode
- * @returns Object work's all metadata, saledata, cover img name 
+ * @returns Object work's all metadata, saledata, cover img name. Return error message when operation failed.
  */
 const scWorkAllData = rjcode => {
     return Promise.all([
@@ -134,6 +136,9 @@ const scWorkAllData = rjcode => {
     .then(res => {
         let work = {}
         return Object.assign(work, res[0], res[1], res[2])
+    })
+    .catch(err => {
+        return err
     })
 }
 

@@ -132,5 +132,6 @@ const updateSaledata = rjcode => {
 module.exports = {
     getWorksData,
     updateSaledata,
-    updateWorkSaledata
+    updateWorkSaledata,
+    db
 };

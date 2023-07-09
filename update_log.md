@@ -1,5 +1,20 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 7/9/2023
+
+### In `./scraper/dlsite.js`
+1. Add error handler to `scWorkAllData`.
+
+### In `./filesystem/`
+1. Send logs to parent process.
+2. Limit parallel requests in order to keep from being blocked by api providers.
+3. Send invalid work/path list to parent to remind users the path is not a directory or a work with invalid RJ code.
+4. Create a util `prcSend.js` to help child process send message to parent process.
+
+### TODO
+1. Need to check if the user provided RJ code is parent RJ code of the work in DLsite,
+if not, need to redirect the metadata request to work's parent RJ code.
+
 ## 7/8/2023
 
 ### In `./filesystem/`

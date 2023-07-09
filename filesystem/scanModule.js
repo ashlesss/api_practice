@@ -1,33 +1,21 @@
-
-// console.log('In Child.js')
-  
-// // If the send method is available
-// if(process.send) {
-  
-//     // Send Hello
-//     process.send("Hello, this is child process.");
-// }
-
 const fs = require("fs-extra")
 const md = require('../database/metadata')
+const { prcSend } = require("./utils/prcSend")
+const config = require('../config.json')
+const database = require('../database/metadata')
+const promiseLimit = require('promise-limit')
 
+const invalid = []
 
 /**
- * Rate limiting the request 
- * @param {Number} milliseconds 
+ * 
+ * @param {object} rootFolders Array of root folder's paths.
+ * @returns work list.
  */
-const sleep = (milliseconds) =>
-    new Promise((resolve) => setTimeout(resolve, milliseconds));
-
-
-    // {
-    //     rjcode: 'RJ299999',
-    //     rootFolder: '/mnt/hgfs/test/2/',
-    //     name: 'RJ299999'
-    // },
 const getWorkList = rootFolders => {
     workList = []
-    for (const rootFolder of rootFolders) {
+    for (const urootFolder of rootFolders) {
+        const rootFolder = urootFolder.path
         if (fs.statSync(rootFolder).isDirectory()) {
             const works = fs.readdirSync(rootFolder)
             for (let i = 0; i < works.length; i++) {
@@ -81,11 +69,20 @@ const getWorkFolderInfo = (rootFolder, folderName) => {
             }
         }
         else {
-            console.log(`${folderName.match(/RJ\d*/)[0]} is invalid`);
+            // console.log(`${folderName.match(/RJ\d*/)[0]} is invalid`);
+            invalid.push({
+                object: folderName.match(/RJ\d*/)[0],
+                reason: `Invalid RJcode on folder name`
+            })
+
         }
     }
     else {
-        console.log(`${folderName} is invalid`);
+        // console.log(`${folderName} is invalid`);
+        invalid.push({
+            object: folderName,
+            reason: `Not a Work folder.`
+        })
     }
 }
 
@@ -119,43 +116,94 @@ const uniqueList = workList => {
 }
 
 /**
- * Development phase it takes folder's paths as an object.
- * Production phase it will get folder's paths from config file.
- * @param {object} rootFolders 
+ * 
+ * @param {object} folder Array with format:
+ * {
+    rjcode: work's RJ code,
+    rootFolder: root folder path,
+    name: name of the folder
+   },
+ * @returns 'added' when work added to db successfully, 'existed' when work exists in db, 
+   and Error message when failed
+ */
+const processFolder = folder => database.db('ys')
+.select('rj_code')
+.where({rj_code: folder.rjcode})
+.count({count: '*'})
+.first()
+.then(res => {
+    if (res.count === 0) {
+        return md.getWorksData(folder.rjcode, folder.rootFolder)
+        .then(result => {
+            if (result === 'added') {
+                return 'added'
+            }
+            else {
+                return result
+            }
+        })
+    }
+    else {
+        return 'existed'
+    }
+})
+
+// Create limit for parallel requests
+const limit = promiseLimit(config.maxParallelism)
+
+/**
+ * Create limitation on parallel requests.
+ * @param {object} folder Array of works with format:
+ * {
+    rjcode: work's RJ code,
+    rootFolder: root folder path,
+    name: name of the folder
+   },
+ */
+const limitedProcessFolder = folder => {
+    return limit(() => processFolder(folder))
+}
+
+/**
+ * Perform scan on designated root folders.
+ * @param {object} rootFolders Array of root folders passed from config file
  */
 const performScan = rootFolders => {
-    // return uniqueList(getWorkList(rootFolders))
     const checkListResult = uniqueList(getWorkList(rootFolders))
     const uniqueFolderList = checkListResult.uniqueList
     const dupFolderList = checkListResult.dupList
-    // console.log(dupFolderList.length);
     let count = {
         added: 0,
-        failed: 0
+        failed: 0,
+        existed: 0
     }
 
-    // if (dupFolderList.length !== 0) {
-    //     console.log('object');
-    // }
-
-    const promises = uniqueFolderList.map(folder => 
-        md.getWorksData(folder.rjcode, folder.rootFolder)
+    const promises = uniqueFolderList.map(folder => {
+        return limitedProcessFolder(folder)
         .then(result => {
             if (result === 'added') {
-                console.log(`${folder.rjcode} added successfully.`);
+                prcSend(`${folder.rjcode} added successfully.`)
                 count.added++
             }
+            else if (result === 'existed') {
+                prcSend(`${folder.rjcode} already existed.`)
+                count.existed++
+            }
             else {
-                console.log(`${folder.rjcode} added failed with error msg: ${result}`);
+                prcSend(`${folder.rjcode} added failed with error msg: ${result}`)
                 count.failed++
             }
         })
-    )
+    })
 
     return Promise.all(promises).then(() => {
-        console.log(`Scan completed: added : ${count.added}, `
+        const msg = `Scan completed: added : ${count.added},\n`
+        + `existed: ${count.existed}\n`
         + `failed: ${count.failed}\nFound ${dupFolderList.length} of duplicate `
-        + `work folders.`);
+        + `work folders.\n`
+        + `Invalid incidents: ${JSON.stringify(invalid)}`
+
+        prcSend(msg)
 
         process.exit(0)
     })

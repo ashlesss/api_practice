@@ -17,6 +17,7 @@
     "knex": "^2.4.2",
     "nodemon": "^2.0.22",
     "pkg": "^5.8.1",
+    "promise-limit": "^2.7.0",
     "socket.io": "^4.7.1",
     "sqlite3": "^5.1.6"
   }
