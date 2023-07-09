@@ -4,6 +4,10 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 
 ### In `./scraper/dlsite.js`
 1. Add error handler to `scWorkAllData`.
+2. Redirect translated work's RJ code to work's original RJ code in order to 
+get that work's valid metadata and saledata.
+3. Store redirected work's `original_workno` from DLsite so that `scGetImg` method
+will get the work's image as expected.
 
 ### In `./filesystem/`
 1. Send logs to parent process.
@@ -12,8 +16,7 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 4. Create a util `prcSend.js` to help child process send message to parent process.
 
 ### TODO
-1. Need to check if the user provided RJ code is parent RJ code of the work in DLsite,
-if not, need to redirect the metadata request to work's parent RJ code.
+~~1. Need to check if the user provided RJ code is parent RJ code of the work in DLsite, if not, need to redirect the metadata request to work's parent RJ code.~~(completed)
 
 ## 7/8/2023
 
@@ -72,8 +75,8 @@ to complete the operation which also causes program to crash. (BUG)
 2. Add *records add completed* prompts.
 
 ### TODO
-~~1. add *try...catch* to the metadata function~~ <br>
-~~2. add more error prompts which can be helpful if errors pop up~~
+~~1. add *try...catch* to the metadata function~~ (completed)<br>
+~~2. add more error prompts which can be helpful if errors pop up~~(completed)
 
 ## 6/28/2023
 
@@ -107,4 +110,4 @@ Optimized database inserting operation. Reduced repeating insertion to database 
 Refactored `tag_id` and `t_tag` table. The `tag_id` is now the same with DLsite's API.
 
 TODO
-~~`dl_count`~~
+~~`dl_count`~~(completed)

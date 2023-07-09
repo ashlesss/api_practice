@@ -16,7 +16,7 @@ const md = require('./metadata')
 //     console.log(`getWorkData failed: ${err}`);
 // })
 
-const list = ['RJ343788', 'RJ306114']
+const list = ['RJ01003143', 'RJ01019666', 'RJ01018106']
 
 const promises = list.map(rjcode => {
     md.getWorksData(rjcode, "/something")

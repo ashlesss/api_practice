@@ -23,20 +23,70 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
         if (mdata.length === 0) {
             reject(new Error(`No metadata returned by RJcode: ${rjcode}`))
         }
-        work.workno = mdata[0].workno;
-        work.alt_rj_code = Number(mdata[0].workno.slice(2))
-        work.work_name = mdata[0].work_name;
-        work.circle_id = Number(mdata[0].circle_id.slice(2))
-        work.nsfw = (mdata[0].age_category_string === 'adult') ? true: false;
-        work.official_price = mdata[0].official_price;
-        work.regist_date = mdata[0].regist_date.slice(0, 10);
-        // work.rate_count_detail = mdata[0].rate_count_detail;
-        work.genres = JSON.stringify(mdata[0].genres)
-        work.maker_name = mdata[0].maker_name
+
+        if (mdata[0].translation_info.is_original === true) {
+            work.workno = mdata[0].workno;
+            work.alt_rj_code = Number(mdata[0].workno.slice(2))
+            work.work_name = mdata[0].work_name;
+            work.circle_id = Number(mdata[0].circle_id.slice(2))
+            work.nsfw = (mdata[0].age_category_string === 'adult') ? true: false;
+            work.official_price = mdata[0].official_price;
+            work.regist_date = mdata[0].regist_date.slice(0, 10);
+            // work.rate_count_detail = mdata[0].rate_count_detail;
+            work.genres = JSON.stringify(mdata[0].genres)
+            work.maker_name = mdata[0].maker_name
+            resolve(work)
+        }
+        else {
+            return redirectedGetMetadata(mdata[0].translation_info.original_workno, mdata[0].work_name, rjcode)
+            .then(rmdata => {
+                resolve(rmdata)
+            })
+        }
+    })
+    .catch(err => {
+        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
+    })
+})
+
+/**
+ * 
+ * @param {string} originRjcode Original RJ code that is redirected to orginal 
+ * work's RJ code from folder work's RJ code.
+ * @param {string} rworkname Chinese work name.
+ * @param {string} folderRjcode RJ code from user folder.
+ * @returns work object that stores work metadata.
+ */
+const redirectedGetMetadata = (originRjcode, rworkname, folderRjcode) => new Promise((resolve, reject) => {
+    const url = `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${originRjcode}`
+    let work = {}
+
+    axios({
+        method: 'GET',
+        url: url,
+    })
+    .then(res => {
+        return res.data
+    })
+    .then(rmdata => {
+        if (rmdata.length === 0) {
+            reject(new Error(`No redirected metadata returned by RJcode: ${rjcode}`))
+        }
+        work.workno = folderRjcode;
+        work.alt_rj_code = Number(folderRjcode.slice(2))
+        work.original_workno = rmdata[0].workno
+        work.work_name = rworkname;
+        work.circle_id = Number(rmdata[0].circle_id.slice(2))
+        work.nsfw = (rmdata[0].age_category_string === 'adult') ? true: false;
+        work.official_price = rmdata[0].official_price;
+        work.regist_date = rmdata[0].regist_date.slice(0, 10);
+        // work.rate_count_detail = rmdata[0].rate_count_detail;
+        work.genres = JSON.stringify(rmdata[0].genres)
+        work.maker_name = rmdata[0].maker_name
         resolve(work)
     })
     .catch(err => {
-        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}`)
+        reject(`Get redirected work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
     })
 })
 
@@ -67,7 +117,12 @@ const scGetSaledata = rjcode => new Promise((resolve, reject) => {
         resolve(sale)
     })
     .catch(err => {
-        reject(`Get work saledata failed on ${rjcode} with error message: ${err.messasge}`)
+        if (err.message) {
+            reject(`Get work saledata failed on ${rjcode} with error message: ${err.message}`)
+        }
+        else {
+            reject(`Get work saledata failed on ${rjcode} with error message: ${err}`)
+        }
     })
 })
 
@@ -128,23 +183,34 @@ const scGetImg = rjcode => new Promise((resolve, reject) => {
  * @returns Object work's all metadata, saledata, cover img name. Return error message when operation failed.
  */
 const scWorkAllData = rjcode => {
-    return Promise.all([
-        scGetMetadata(rjcode),
-        scGetSaledata(rjcode),
-        scGetImg(rjcode)
-    ])
-    .then(res => {
-        let work = {}
-        return Object.assign(work, res[0], res[1], res[2])
+    let work = {}
+    return scGetMetadata(rjcode)
+    .then(metadata => {
+        return scGetSaledata(metadata.workno)
+        .then(saledata => {
+            if (metadata.original_workno) {
+                return scGetImg(metadata.original_workno)
+                .then(imgName => {
+                    return Object.assign(work, metadata, saledata, imgName)
+                })
+            }
+            else {
+                return scGetImg(metadata.workno)
+                .then(imgName => {
+                    return Object.assign(work, metadata, saledata, imgName)
+                })
+            }
+        })
     })
     .catch(err => {
         return err
-    })
+    }) 
 }
 
 module.exports = {
     scGetMetadata,
     scGetSaledata,
     scGetImg,
-    scWorkAllData
+    scWorkAllData,
+    redirectedGetMetadata
 }
