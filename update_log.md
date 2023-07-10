@@ -1,21 +1,28 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+# Known dlsite API issues
+1. When user gives work that is translated by dlsite official. The RJ code of tha work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
+
 ## 7/10/2023
 
-### In `./database/metadata/js`
+### In `./database/metadata.js`
 1. Add VAs related to the work to the db.
+2. Check if `workdata.va` in `getWorksData` is `undefined` or not before inserting work to database. (See **Know dlsite API issues 1**)
 
 ### In `./scraper/dlsite.js`
 1. Store VAs info to the work object.
 
 ### In `database.query.js`
 1. Add VAs info to query results.
+2. Optimize RJ work query. With `works_w_metadata` table, we can now return query result faster only make query to that table.
 
 ### Database
 1. Create `t_va_id` and `t_va` table to store VAs for works.
+2. Create `works_w_metadata` table which contains all works and their metadata all together for faster query 
+**(SPECIAL THANKS TO KIKOERU PROJECT DEVS' SOURCE CODE!! So that I can really understand how nested views work in database)**
 
 ### TODO
-1. Create a view table which will be helpful for querying work's metadata.(in progress)
+1. ~~Create a view table which will be helpful for querying work's metadata.~~(Completed)
 
 ## 7/9/2023
 

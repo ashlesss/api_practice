@@ -82,7 +82,7 @@ const dl = require('./dlsite')
 // .then(res => {
 //     console.log(res);
 // })
-const list = ['RJ01003143', 'RJ01019666', 'RJ01018106']
+const list = ['RJ307093', 'RJ01018106']
 
 const promises = list.map(rj => {
     dl.scWorkAllData(rj)

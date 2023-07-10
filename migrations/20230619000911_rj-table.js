@@ -51,6 +51,38 @@ exports.up = function(knex) {
       tbl.foreign('va_rjcode').references('rj_code').inTable('ys')
       tbl.primary(['va_id', 'va_rjcode'])
     })
+    .raw(`
+    CREATE VIEW IF NOT EXISTS works_w_metadata
+    AS
+    SELECT baseQueryWithVA.*,
+      json_object('tags', json_group_array(json_object('tag_id', t_tag_id.id, 'tag_name', t_tag_id.tag_name))) AS tags
+    FROM (
+      SELECT baseQuery.*,
+        json_object('vas', json_group_array(json_object('va_id', t_va_id.id, 'va_name', t_va_id.va_name))) AS vas
+      FROM (
+        SELECT ys.rj_code,
+        ys.work_title,
+        ys.circle_id,
+        t_circle.circle_name,
+        json_object('circle_id', ys.circle_id, 'circle_name', t_circle.circle_name) AS circleObj,
+        ys.nsfw,
+        ys.official_price,
+        ys.dl_count,
+        ys.regist_date,
+        ys.rate_count,
+        ys.rate_average_2dp,
+        ys.rate_count_detail
+      FROM ys
+      JOIN t_circle ON t_circle.id = ys.circle_id
+      ) AS baseQuery
+      JOIN t_va ON t_va.va_rjcode = baseQuery.rj_code
+      JOIN t_va_id ON t_va_id.id = t_va.va_id
+      GROUP BY baseQuery.rj_code
+    ) AS baseQueryWithVA
+    LEFT JOIN t_tag ON t_tag.tag_rjcode = baseQueryWithVA.rj_code
+    LEFT JOIN t_tag_id ON t_tag_id.id = t_tag.tag_id
+    GROUP BY baseQueryWithVA.rj_code
+    `)
   };
   
   /**
@@ -64,5 +96,6 @@ exports.up = function(knex) {
     .dropTableIfExists('t_circle')
     .dropTableIfExists('t_va')
     .dropTableIfExists('t_va_id')
+    .dropViewIfExists('works_w_metadata')
   };
   

@@ -65,26 +65,27 @@ const insertWorkTodb = (work, workdir) => db.transaction(trx =>
             .onConflict('circle_name').ignore()
         )
 
+
         // Add va to work
         const va = JSON.parse(work.va)
-        for (let i = 0; i < va.length; i++) {
-            promises.push(
-                trx('t_va_id')
-                .insert({
-                    id: va[i].id,
-                    va_name: va[i].name
-                })
-                .onConflict().ignore()
-                .then(() => 
-                    trx('t_va')
+            for (let i = 0; i < va.length; i++) {
+                promises.push(
+                    trx('t_va_id')
                     .insert({
-                        va_id: va[i].id,
-                        va_rjcode: work.workno
+                        id: va[i].id,
+                        va_name: va[i].name
                     })
                     .onConflict().ignore()
+                    .then(() => 
+                        trx('t_va')
+                        .insert({
+                            va_id: va[i].id,
+                            va_rjcode: work.workno
+                        })
+                        .onConflict().ignore()
+                    )
                 )
-            )
-        }
+            }
 
         return Promise.all(promises).then(() => trx)
     })
@@ -99,14 +100,19 @@ const insertWorkTodb = (work, workdir) => db.transaction(trx =>
 const getWorksData = (rjcode, workdir) => {
     return scWorkAllData(rjcode)
     .then(workdata => {
-        return insertWorkTodb(workdata, workdir)
-        .then(() => {
-            // console.log(`${rjcode} has been added to db`);
-            return 'added'
-        })
-        .catch(err => {
-            return err.message
-        })
+        if (typeof workdata.va !== 'undefined') {
+            return insertWorkTodb(workdata, workdir)
+            .then(() => {
+                // console.log(`${rjcode} has been added to db`);
+                return 'added'
+            })
+            .catch(err => {
+                return err.message
+            })
+        }
+        else {
+            throw new Error(`${rjcode} failed to fund any VAs info, Skipped!`)
+        }
     })
     .catch(err => {
         return err.message

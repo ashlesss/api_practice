@@ -30,32 +30,20 @@ async function isDuplicate(rjcode) {
 }
 
 async function getFullRecord(rjcode) {
-    const ysRec = await db('ys').where({rj_code : rjcode});
-
-    const tagRec = await db('t_tag_id')
-    .select('tag_name')
-    .join('t_tag', "t_tag_id.id", "=", "t_tag.tag_id")
-    .where({tag_rjcode: rjcode})
-
-    const circleRec = await db('ys')
-    .select('circle_name')
-    .join('t_circle', 'ys.circle_id', '=', 't_circle.id')
+    const record = await db('works_w_metadata')
+    .select('*')
     .where({rj_code: rjcode})
 
-    const vaRec = await db('t_va_id')
-    .select('va_name')
-    .join('t_va', 't_va_id.id', 't_va.va_id')
-    .where({va_rjcode: rjcode})
-
-    // const tagRec = await db('t_tag').select('tag').where({tag_rjcode: rjcode});
-
-    if (ysRec.length === 0 && tagRec.length === 0 && vaRec.length === 0) {
+    if (record.length === 0) {
         return {message: "workNotFound"};
     }
     else {
-        return {work: ysRec[0], tags: tagRec, circle: circleRec[0], va: vaRec};
+        // Parse stringified values
+        record[0]['rate_count_detail'] = JSON.parse(record[0].rate_count_detail)
+        record[0]['vas'] = JSON.parse(record[0].vas)
+        record[0]['tags'] = JSON.parse(record[0].tags)
+        return record[0]
     }
-
 }
 
 // This function now return all the works with tags from the database
