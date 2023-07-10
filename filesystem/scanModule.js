@@ -172,44 +172,52 @@ const limitedProcessFolder = folder => {
  * @param {object} rootFolders Array of root folders passed from config file
  */
 const performScan = rootFolders => {
-    const checkListResult = uniqueList(getWorkList(rootFolders))
-    const uniqueFolderList = checkListResult.uniqueList
-    const dupFolderList = checkListResult.dupList
-    let count = {
-        added: 0,
-        failed: 0,
-        existed: 0
-    }
+    try {
+        const checkListResult = uniqueList(getWorkList(rootFolders))
+        const uniqueFolderList = checkListResult.uniqueList
+        const dupFolderList = checkListResult.dupList
+        let count = {
+            added: 0,
+            failed: 0,
+            existed: 0
+        }
 
-    const promises = uniqueFolderList.map(folder => {
-        return limitedProcessFolder(folder)
-        .then(result => {
-            if (result === 'added') {
-                prcSend(`${folder.rjcode} added successfully.`)
-                count.added++
-            }
-            else if (result === 'existed') {
-                prcSend(`${folder.rjcode} already existed. Work's path updated.`)
-                count.existed++
-            }
-            else {
-                prcSend(`${folder.rjcode} added failed with error msg: ${result}`)
-                count.failed++
-            }
+        const promises = uniqueFolderList.map(folder => {
+            return limitedProcessFolder(folder)
+            .then(result => {
+                if (result === 'added') {
+                    prcSend(`${folder.rjcode} added successfully.`)
+                    count.added++
+                }
+                else if (result === 'existed') {
+                    prcSend(`${folder.rjcode} already existed. Work's path updated.`)
+                    count.existed++
+                }
+                else {
+                    prcSend(`${folder.rjcode} added failed with error msg: ${result}`)
+                    count.failed++
+                }
+            })
         })
-    })
 
-    return Promise.all(promises).then(() => {
-        const msg = `Scan completed: added : ${count.added},\n`
-        + `existed: ${count.existed}\n`
-        + `failed: ${count.failed}\nFound ${dupFolderList.length} of duplicate `
-        + `work folders.\n`
-        + `Invalid incidents: ${JSON.stringify(invalid)}`
+        return Promise.all(promises).then(() => {
+            const msg = `Scan completed: added : ${count.added},\n`
+            + `existed: ${count.existed}\n`
+            + `failed: ${count.failed}\nFound ${dupFolderList.length} of duplicate `
+            + `work folders.\n`
+            + `Invalid incidents: ${JSON.stringify(invalid)}`
 
-        prcSend(msg)
+            prcSend({status: 'SCAN_COMPLETED', message: msg})
 
-        process.exit(0)
-    })
+            process.exit(0)
+        })
+    } catch(err) {
+        if (err.code === 'ENOENT') {
+            prcSend(`Error code: "${err.code}", on path: "${err.path}". `
+            + `Check the path if the path exists in your system or not.`)
+        }
+        process.exit(1)
+    }
 
 }
 

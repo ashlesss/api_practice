@@ -42,13 +42,18 @@ async function getFullRecord(rjcode) {
     .join('t_circle', 'ys.circle_id', '=', 't_circle.id')
     .where({rj_code: rjcode})
 
+    const vaRec = await db('t_va_id')
+    .select('va_name')
+    .join('t_va', 't_va_id.id', 't_va.va_id')
+    .where({va_rjcode: rjcode})
+
     // const tagRec = await db('t_tag').select('tag').where({tag_rjcode: rjcode});
 
-    if (ysRec.length === 0 && tagRec.length === 0) {
+    if (ysRec.length === 0 && tagRec.length === 0 && vaRec.length === 0) {
         return {message: "workNotFound"};
     }
     else {
-        return {work: ysRec[0], tags: tagRec, circle: circleRec[0]};
+        return {work: ysRec[0], tags: tagRec, circle: circleRec[0], va: vaRec};
     }
 
 }

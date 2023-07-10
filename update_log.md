@@ -1,5 +1,22 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 7/10/2023
+
+### In `./database/metadata/js`
+1. Add VAs related to the work to the db.
+
+### In `./scraper/dlsite.js`
+1. Store VAs info to the work object.
+
+### In `database.query.js`
+1. Add VAs info to query results.
+
+### Database
+1. Create `t_va_id` and `t_va` table to store VAs for works.
+
+### TODO
+1. Create a view table which will be helpful for querying work's metadata.(in progress)
+
 ## 7/9/2023
 
 ### In `./scraper/dlsite.js`
@@ -21,8 +38,8 @@ will get the work's image as expected.
 
 ### TODO
 1. ~~Need to check if the user provided RJ code is parent RJ code of the work in DLsite, if not, need to redirect the metadata request to work's parent RJ code.~~(completed)
-2. Add VAs to the database.
-3. Add more filter options to api. Such as sort with tags/va/circle etc.
+2. ~~Add VAs to the database.~~(completed)
+3. Add more filter options to api. Such as sort with tags/va/circle etc.(delayed)
 
 ## 7/8/2023
 

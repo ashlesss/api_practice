@@ -32,12 +32,24 @@ exports.up = function(knex) {
       tbl.string('tag_rjcode')
       
       tbl.foreign('tag_id').references('id').inTable('t_tag_id')
-      tbl.foreign('tag_rjcode').references('rjcode').inTable('ys')
+      tbl.foreign('tag_rjcode').references('rj_code').inTable('ys')
       tbl.primary(['tag_id', 'tag_rjcode'])
     })
     .createTable('t_circle', tbl => {
       tbl.integer('id')
       tbl.string('circle_name').notNullable().primary()
+    })
+    .createTable('t_va_id', tbl => {
+      tbl.integer('id').primary()
+      tbl.string('va_name').notNullable()
+    })
+    .createTable('t_va', tbl => {
+      tbl.integer('va_id')
+      tbl.string('va_rjcode')
+
+      tbl.foreign('va_id').references('id').inTable('t_va_id')
+      tbl.foreign('va_rjcode').references('rj_code').inTable('ys')
+      tbl.primary(['va_id', 'va_rjcode'])
     })
   };
   
@@ -50,5 +62,7 @@ exports.up = function(knex) {
     .dropTableIfExists('t_tag')
     .dropTableIfExists('t_tag_id')
     .dropTableIfExists('t_circle')
+    .dropTableIfExists('t_va')
+    .dropTableIfExists('t_va_id')
   };
   

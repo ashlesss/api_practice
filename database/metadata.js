@@ -35,7 +35,7 @@ const insertWorkTodb = (work, workdir) => db.transaction(trx =>
         
         const promises = []
 
-        // console.log("RJCODE: " + work.workno);
+        // Add tags to work
         const genres = JSON.parse(work.genres)
         for (let i = 0; i < genres.length; i++) {
             promises.push(
@@ -64,6 +64,27 @@ const insertWorkTodb = (work, workdir) => db.transaction(trx =>
             })
             .onConflict('circle_name').ignore()
         )
+
+        // Add va to work
+        const va = JSON.parse(work.va)
+        for (let i = 0; i < va.length; i++) {
+            promises.push(
+                trx('t_va_id')
+                .insert({
+                    id: va[i].id,
+                    va_name: va[i].name
+                })
+                .onConflict().ignore()
+                .then(() => 
+                    trx('t_va')
+                    .insert({
+                        va_id: va[i].id,
+                        va_rjcode: work.workno
+                    })
+                    .onConflict().ignore()
+                )
+            )
+        }
 
         return Promise.all(promises).then(() => trx)
     })

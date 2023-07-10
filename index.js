@@ -34,7 +34,12 @@ io.on("connection", socket => {
         if (res === 'START_SCAN') {
             scanner = child_process.fork('./filesystem/scanner.js')
             scanner.on('message', msg => {
-                socket.emit('progress', msg)
+                if (msg.status) {
+                    socket.emit('scan_completed', msg.message)
+                }
+                else {
+                    socket.emit('progress', msg)
+                }
             })
         }
         else {

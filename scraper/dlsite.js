@@ -35,6 +35,7 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
             // work.rate_count_detail = mdata[0].rate_count_detail;
             work.genres = JSON.stringify(mdata[0].genres)
             work.maker_name = mdata[0].maker_name
+            work.va = JSON.stringify(mdata[0].creaters.voice_by)
             resolve(work)
         }
         else {
@@ -51,7 +52,7 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
 
 /**
  * 
- * @param {string} originRjcode Original RJ code that is redirected to orginal 
+ * @param {string} originRjcode Original RJ code that is redirected to original 
  * work's RJ code from folder work's RJ code.
  * @param {string} rworkname Chinese work name.
  * @param {string} folderRjcode RJ code from user folder.
@@ -83,6 +84,7 @@ const redirectedGetMetadata = (originRjcode, rworkname, folderRjcode) => new Pro
         // work.rate_count_detail = rmdata[0].rate_count_detail;
         work.genres = JSON.stringify(rmdata[0].genres)
         work.maker_name = rmdata[0].maker_name
+        work.va = JSON.stringify(rmdata[0].creaters.voice_by)
         resolve(work)
     })
     .catch(err => {
@@ -143,10 +145,7 @@ const scGetImg = rjcode => new Promise((resolve, reject) => {
         let tmp = (nrj % 1000 === 0) ? nrj : nrj - (nrj % 1000) + 1000
         sid = (`00000000${tmp}`).slice(-8)
     }
-    // resolve(sid)
-    // console.log(sid);
 
-    // Hard coded img path
     imgPath = config.img_folder
 
     if (fs.existsSync(`${imgPath}${rjcode}_img_main.jpg`)) {
