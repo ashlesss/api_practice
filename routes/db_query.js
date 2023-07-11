@@ -6,14 +6,26 @@ const { validate } = require('./utils/validateRequest')
 
 // Endpoint /api/query/
 
-router.get('/rc', 
-    query('page').optional({nullable: true}).isInt(),
+/**
+ * Request work lists with query values.
+ * Query values are optional.
+ * 'page, 'order', and 'sort' are sanitized.
+ * Endpoint example /api/query/works?page=1&order=alt_rj_code&sort=asc
+ * order = ['alt_rj_code', 'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw']
+ */
+router.get('/works', 
+    query('page').optional({values: null}).isInt(),
+    query('order').optional({values: null}).isIn(['alt_rj_code', 
+    'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw']),
+    query('sort').optional({values: null}).isIn(['asc', 'desc']),
     (req, res) => {
         if (!validate(req, res)) return
         
         const currentPage = req.query.page || 1
-        ysdb.getWorks(currentPage).then(ysdb => {
-            if (ysdb.message && ysdb.message === 'no more page') {
+        const currentOrder = req.query.order || 'alt_rj_code'
+        const currentSort = req.query.sort || 'desc'
+        ysdb.getWorks(currentPage, currentOrder, currentSort).then(ysdb => {
+            if (ysdb.message) {
                 res.status(404).json(ysdb);
             }
             else {
@@ -53,25 +65,5 @@ router.get('/record', (req, res) => {
         res.status(500).send("message: error on get work all record")
     })
 })
-
-// // Test function for isDuplicate()
-// router.get('/dup/:id', (req, res) => {
-//     ysdb.isDuplicate(req.params.id).then( ysdb => {
-//         res.status(200).send(ysdb);
-//         // console.log(ysdb.work[0].work_title);
-//     })
-//     .catch( error => {
-//         res.status(500).send("message: error on get isDup")
-//     })
-// })
-
-// router.get('/find/:id', (req, res) => {
-//     ysdb.helper(req.params.id).then( ysdb => {
-//         res.status(200).send(ysdb)
-//     })
-//     .catch( error => {
-//         res.status(500).json({ message: "Error on helper()"})
-//     })
-// });
 
 module.exports = router;

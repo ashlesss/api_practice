@@ -54,9 +54,11 @@ async function getFullRecord(rjcode) {
 /**
  * 
  * @param {number} page Page number  
+ * @param {string} order By RJ code, created date, rate_average_2dp, etc.
+ * @param {string} sort By ascending or descending order.
  * @returns Object with pagination and works.
  */
-async function getWorks(page) {
+async function getWorks(page, order, sort) {
     // console.log(page); // String
     const worksPerPage = Config.worksPerPage;
     const totalWorks = await db('ys').count({count: 'rj_code'});
@@ -64,7 +66,10 @@ async function getWorks(page) {
 
     // First page
     if (page === '1') {
-        const curWorks = await db('ys').orderBy('alt_rj_code', 'asc').limit(worksPerPage).offset(0)
+        const curWorks = await db('ys')
+        .orderBy(order, sort)
+        .limit(worksPerPage)
+        .offset(0)
 
         let works = [];
 
@@ -85,7 +90,7 @@ async function getWorks(page) {
     else if (Number(page) <= totalPage) {
         // console.log(worksPerPage * (Number(page) - 1));
         const curWorks = await db('ys')
-        .orderBy('alt_rj_code', 'asc')
+        .orderBy(order, sort)
         .limit(worksPerPage)
         .offset((page - 1) * worksPerPage)
 

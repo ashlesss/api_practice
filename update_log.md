@@ -10,6 +10,9 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 2. Remove returning all works feature.
 3. Refactor the query JSON results **(QUERY API RESULT CHANGED, FRONT-END REFACTOR REQUIRED)** 
 
+### In `./routes/db_query.js`
+1. Work query api endpoint changed to `/api/query/works`. **(QUERY API ENDPOINT CHANGED, FRONT-END REFACTOR REQUIRED)** 
+
 ### Database 
 1. add `work_main_img` to view table so that front-end can use that information to fetch work cover image. 
 
@@ -56,7 +59,7 @@ will get the work's image as expected.
 ### TODO
 1. ~~Need to check if the user provided RJ code is parent RJ code of the work in DLsite, if not, need to redirect the metadata request to work's parent RJ code.~~(completed)
 2. ~~Add VAs to the database.~~(completed)
-3. Add more filter options to api. Such as sort with tags/va/circle etc.(delayed)
+3. Add more filter options to api. Such as sort with tags/va/circle etc.(In progress)
 
 ## 7/8/2023
 
