@@ -1,7 +1,17 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
 # Known dlsite API issues
-1. When user gives work that is translated by dlsite official. The RJ code of tha work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
+1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
+
+## 7/11/2023
+
+### In `./database/query.js`
+1. Change the pagination offset formula.
+2. Remove returning all works feature.
+3. Refactor the query JSON results **(QUERY API RESULT CHANGED, FRONT-END REFACTOR REQUIRED)** 
+
+### Database 
+1. add `work_main_img` to view table so that front-end can use that information to fetch work cover image. 
 
 ## 7/10/2023
 

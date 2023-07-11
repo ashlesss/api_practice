@@ -1,22 +1,28 @@
 const express = require('express');
 const ysdb = require('../database/query');
 const router = express.Router();
+const { query } = require('express-validator');
+const { validate } = require('./utils/validateRequest')
 
 // Endpoint /api/query/
 
-router.get('/rc', (req, res) => {
-    ysdb.getWorks(req.query.page, req.query.isall).then(ysdb => {
-        // console.log(ysdb.message)
-        if (ysdb.message && ysdb.message === 'no more page') {
-            res.status(404).json(ysdb);
-        }
-        else {
-            res.status(200).json(ysdb);
-        }
-    })
-    .catch( error => {
-        res.status(500).json({message: "cannot get rc"});
-    });
+router.get('/rc', 
+    query('page').optional({nullable: true}).isInt(),
+    (req, res) => {
+        if (!validate(req, res)) return
+        
+        const currentPage = req.query.page || 1
+        ysdb.getWorks(currentPage).then(ysdb => {
+            if (ysdb.message && ysdb.message === 'no more page') {
+                res.status(404).json(ysdb);
+            }
+            else {
+                res.status(200).json(ysdb);
+            }
+        })
+        .catch( error => {
+            res.status(500).json({message: `cannot get rc with error message: ${error}`});
+        });
 });
 
 router.get('/find/:id', (req, res) => {

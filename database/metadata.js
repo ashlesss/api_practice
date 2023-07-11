@@ -111,7 +111,7 @@ const getWorksData = (rjcode, workdir) => {
             })
         }
         else {
-            throw new Error(`${rjcode} failed to fund any VAs info, Skipped!`)
+            throw new Error(`${rjcode} failed to find any VAs info, Skipped!`)
         }
     })
     .catch(err => {

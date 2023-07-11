@@ -62,6 +62,7 @@ exports.up = function(knex) {
       FROM (
         SELECT ys.rj_code,
         ys.work_title,
+        ys.work_main_img,
         ys.circle_id,
         t_circle.circle_name,
         json_object('circle_id', ys.circle_id, 'circle_name', t_circle.circle_name) AS circleObj,

@@ -39,6 +39,7 @@ async function getFullRecord(rjcode) {
     }
     else {
         // Parse stringified values
+        delete record[0].circleObj
         record[0]['rate_count_detail'] = JSON.parse(record[0].rate_count_detail)
         record[0]['vas'] = JSON.parse(record[0].vas)
         record[0]['tags'] = JSON.parse(record[0].tags)
@@ -50,72 +51,63 @@ async function getFullRecord(rjcode) {
 // Limit works per page = 12
 // TODO 
 // Make works per page as a dynamic value 
-async function getWorks(page, isAll) {
+/**
+ * 
+ * @param {number} page Page number  
+ * @returns Object with pagination and works.
+ */
+async function getWorks(page) {
+    // console.log(page); // String
+    const worksPerPage = Config.worksPerPage;
+    const totalWorks = await db('ys').count({count: 'rj_code'});
+    const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
 
-    if (isAll && isAll == 'yes') {
-        const allworks = await db('ys').select('rj_code')
+    // First page
+    if (page === '1') {
+        const curWorks = await db('ys').orderBy('alt_rj_code', 'asc').limit(worksPerPage).offset(0)
 
-        let fullRecord = [];
+        let works = [];
 
-        for (let i = 0; i < allworks.length; i++) {
-            fullRecord.push(await getFullRecord(allworks[i].rj_code))
+        // Get pagination info first
+        const pagination = {
+            current_page: Number(page),
+            max_page: totalPage,
+            total_works: totalWorks[0].count,
         }
-        fullRecord.push(await db('ys').count({count: 'rj_code'}))
-        return fullRecord
+
+        // Then get works and tags 
+        for (let i = 0; i < curWorks.length; i++) {
+            works.push(await getFullRecord(curWorks[i].rj_code))
+        }
+        return {pagination: pagination, works: works}
+    }
+    // Other page than first page
+    else if (Number(page) <= totalPage) {
+        // console.log(worksPerPage * (Number(page) - 1));
+        const curWorks = await db('ys')
+        .orderBy('alt_rj_code', 'asc')
+        .limit(worksPerPage)
+        .offset((page - 1) * worksPerPage)
+
+        //when 3 works per page (2 * (Number(page) - 1) -1)
+
+        let works = [];
+
+        // Get pagination info first
+        const pagination = {
+            current_page: Number(page),
+            max_page: totalPage,
+            total_works: totalWorks[0].count,
+        }
+
+        // Then get works and tags 
+        for (let i = 0; i < curWorks.length; i++) {
+            works.push(await getFullRecord(curWorks[i].rj_code))
+        }
+        return {pagination: pagination, works: works}
     }
     else {
-        // console.log(page); // String
-        const worksPerPage = Config.worksPerPage;
-        const totalWorks = await db('ys').count({count: 'rj_code'});
-        const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
-
-        // First page
-        if (page === '1') {
-            const curWorks = await db('ys').orderBy('alt_rj_code', 'asc').limit(worksPerPage).offset(0)
-
-            let works = [];
-
-            // Push pagination info first
-            works.push({
-                current_page: Number(page),
-                max_page: totalPage,
-                total_works: totalWorks[0].count
-            });
-
-            // Then push work and tags 
-            for (let i = 0; i < curWorks.length; i++) {
-                works.push(await getFullRecord(curWorks[i].rj_code))
-            }
-            return works
-        }
-        // Other page than first page
-        else if (Number(page) <= totalPage) {
-            // console.log(worksPerPage * (Number(page) - 1));
-            const curWorks = await db('ys')
-            .orderBy('alt_rj_code', 'asc')
-            .limit(worksPerPage)
-            .offset((worksPerPage * (Number(page) - 1)))
-
-            //when 3 works per page (2 * (Number(page) - 1) -1)
-
-            let works = [];
-            // Push pagination info first
-
-            works.push({
-                current_page: Number(page),
-                max_page: totalPage,
-                total_works: totalWorks[0].count
-            });
-
-            // Then push work and tags 
-            for (let i = 0; i < curWorks.length; i++) {
-                works.push(await getFullRecord(curWorks[i].rj_code))
-            }
-            return works
-        }
-        else {
-            return {message: "no more page"}
-        }
+        return {message: "no more page"}
     }
 }
 
