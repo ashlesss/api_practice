@@ -61,6 +61,7 @@ exports.up = function(knex) {
         json_object('vas', json_group_array(json_object('va_id', t_va_id.id, 'va_name', t_va_id.va_name))) AS vas
       FROM (
         SELECT ys.rj_code,
+        ys.alt_rj_code,
         ys.work_title,
         ys.work_main_img,
         ys.circle_id,

@@ -3,6 +3,44 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 7/13/2023
+
+### In `./database/query.js`
+1. Add `getWorkByKeyword` method to handle incoming search value and return results **(Wuhu~, drive me crazy)**
+
+### In `./routes/`
+1. Add route `/api/search/:keyword` to handle incoming search values.
+2. Make a utility that is used to format the work results straight from the database.
+
+### Database 
+1. Fix `alt_rj_code` missing in `works_w_metadata` view table.
+
+### Functionality
+1. Precise *(I guess)* searching is now available
+ * Search work by va, circle, tags
+ * Support multiple keywords search
+
+Precise searching is tested with small amounts of data. <br>
+
+**It only support search formats like:**
+ * va: `$va:秋山はるる$`
+ * circle: `$va:テグラユウキ$`
+ * tag: `$tag:环绕音$`
+ * RJcode: `RJ12345678` or `RJ123456`
+
+Direct search by va, circle, tag will be supported in the future.
+
+## 7/12/2023
+
+### In `./routes/db_query.js`
+1. Remove duplicate api routes. **(QUERY API ENDPOINT CHANGED, FRONT-END REFACTOR REQUIRED)**
+  * `/api/query/find/:id` is now moved to `/api/query/work/:id`.
+  * `/api/query/tag/:id` is now deprecated.
+  * `/api/query/record?rjcode` is now moved to `/api/query/work/:id`.
+
+## In `./database/query.js`
+1. Remove unused methods.
+
 ## 7/11/2023
 
 ### In `./database/query.js`
@@ -59,7 +97,7 @@ will get the work's image as expected.
 ### TODO
 1. ~~Need to check if the user provided RJ code is parent RJ code of the work in DLsite, if not, need to redirect the metadata request to work's parent RJ code.~~(completed)
 2. ~~Add VAs to the database.~~(completed)
-3. Add more filter options to api. Such as sort with tags/va/circle etc.(In progress)
+3. ~~Add more filter options to api. Such as sort with tags/va/circle etc.~~(Completed)
 
 ## 7/8/2023
 
