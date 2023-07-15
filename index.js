@@ -14,21 +14,7 @@ const child_process = require('child_process')
 io.on("connection", socket => {
     console.log(socket.id);
 
-    // const logs = [1, 2, 3, 4] 
-    // socket.emit("something", 1234)
-    // socket.on("scan", res => {
-    //     // console.log(res);
-    //     if (res === 'START_SCAN') {
-    //         socket.emit('progress', "Scanning")
-    //         for (let i = 0; i < 10; i++) {
-    //             socket.emit('progress', i)
-    //         }
-    //         socket.emit("failed", 'scan failed')
-    //     }
-    //     else {
-    //         socket.emit('progress', 'Not scanning')
-    //     }
-    // })
+    socket.emit('ON_SCAN_PAGE', 'Connection to server established.')
 
     socket.on("scan", res => {
         if (res === 'START_SCAN') {

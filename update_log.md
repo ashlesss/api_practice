@@ -3,6 +3,12 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 7/14/2023
+
+### In `./database/query.js`
+1. upgrade Precise searching precision. Searching is now can narrow down with the keywords provided by user. Only showing relevant results to user keywords.
+
+
 ## 7/13/2023
 
 ### In `./database/query.js`

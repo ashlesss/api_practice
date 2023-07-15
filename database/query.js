@@ -135,13 +135,23 @@ async function getWorkByKeyword(keyword, order, sort) {
     }
     
     // If the keyword is circle
-    const circle = keyword.match(/circle:.+?(?=\$)/) || []
+    const circle = keyword.match(/circle:.+?(?=\$)/g) || []
     let cleanCircle = []
     let circleQueryId = []
     if (circle.length !== 0) {
-        cleanCircle = circle[0].slice(7)
+        for (let i = 0; i < circle.length; i++) {
+            cleanCircle.push(circle[i].match(/[^circle:].+/)[0])
+        }
+
         circleQueryId = await db('t_circle')
-        .where('circle_name', 'like', `%${cleanCircle}%`)
+        .whereIn('circle_name', cleanCircle)
+        .select('id')
+        .pluck('id')
+    }
+    else if (circle.length === 1) {
+        cleanCircle = circle.match(/[^circle:].+/)[0]
+        circleQueryId = await db('t_circle')
+        .whereIn('circle_name', cleanCircle)
         .select('id')
         .pluck('id')
     }
@@ -154,13 +164,13 @@ async function getWorkByKeyword(keyword, order, sort) {
         for (let a = 0; a < va.length; a++) {
             cleanVA.push(va[a].match(/[^va:].+/)[0])
         }
-        // console.log(cleanVA);
+        // console.log(cleanVA);s
         vaQueryId = await db('t_va_id')
         .whereIn('va_name', cleanVA)
         .select('id')
         .pluck('id')
     }
-    else if (va.length == 1) {
+    else if (va.length === 1) {
         cleanVA = va.match(/[^va:].+/)[0]
         // console.log(cleanVA);
         vaQueryId = await db('t_va_id')
@@ -195,54 +205,84 @@ async function getWorkByKeyword(keyword, order, sort) {
 
     if (cleanCircle.length !== 0 && cleanTag.length !== 0 && cleanVA.length !== 0) {
         const result = db.raw(
-            `SELECT *
-            FROM works_w_metadata as works
-            INNER JOIN t_circle ON t_circle.id = works.circle_id
-            INNER JOIN t_tag ON t_tag.tag_rjcode = works.rj_code
-            INNER JOIN t_va On t_va.va_rjcode = works.rj_code
-            WHERE
-            circle_id = (SELECT id FROM t_circle WHERE t_circle.id IN (${circleQueryId}))
-            AND
-            tag_id = (SELECT tag_id FROM t_tag WHERE t_tag.tag_id IN (${tagQueryId}))
-            AND
-            va_id = (SELECT va_id FROM t_va WHERE t_va.va_id IN (${vaQueryId}))
+            `SELECT 
+            rj_code, alt_rj_code, work_title, work_main_img, circle_id, 
+            circle_name, circleObj, nsfw, official_price, dl_count, regist_date,
+            rate_count, rate_average_2dp, rate_count_detail, vas, tags
+            FROM (
+            SELECT *
+            FROM
+            (
+            SELECT *
+            FROM t_tag 
+            WHERE t_tag.tag_rjcode IN
+            (SELECT va_rjcode
+            FROM t_va
+            WHERE t_va.va_id IN (${vaQueryId})
+            GROUP BY va_rjcode
+            HAVING Count(va_rjcode)=${vaQueryId.length})
+            )
+            INNER JOIN works_w_metadata ON works_w_metadata.rj_code = tag_rjcode
+            WHERE tag_id IN (${tagQueryId})
+            GROUP BY tag_rjcode
+            HAVING Count(tag_rjcode)=${tagQueryId.length}
+            )
+            WHERE circle_id IN (${circleQueryId})
             GROUP BY rj_code
+            HAVING Count(rj_code)=${circleQueryId.length}
             ORDER BY ${order} ${sort}`
         )
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length == 0 && cleanVA.length == 0) {
-        const result = db('works_w_metadata')
-        .select('*')
-        .whereIn('circle_id', circleQueryId)
+        const result = db.raw(
+            `SELECT *
+            FROM works_w_metadata AS works
+            WHERE works.circle_id IN (${circleQueryId})
+            GROUP BY rj_code
+            HAVING Count(rj_code)=${circleQueryId.length}
+            ORDER BY ${order} ${sort}`
+        )
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length !== 0 && cleanVA.length == 0) {
         const result = db.raw(
             `SELECT *
-            FROM works_w_metadata as works
-            INNER JOIN t_circle ON t_circle.id = works.circle_id
-            INNER JOIN t_tag ON t_tag.tag_rjcode = works.rj_code
-            WHERE
-            circle_id = (SELECT id FROM t_circle WHERE t_circle.id IN (${circleQueryId}))
-            AND
-            tag_id = (SELECT tag_id FROM t_tag WHERE t_tag.tag_id IN (${tagQueryId}))
+            FROM 
+            (
+            SELECT *
+             FROM works_w_metadata AS works
+            WHERE works.rj_code IN (
+            SELECT tag_rjcode
+            FROM t_tag
+            WHERE t_tag.tag_id IN (${tagQueryId}) 
+            GROUP BY tag_rjcode
+            HAVING Count(tag_rjcode) = ${tagQueryId.length})
+            )
+            WHERE circle_id IN (${circleQueryId}) 
             GROUP BY rj_code
+            HAVING Count(rj_code) = ${circleQueryId.length};
             ORDER BY ${order} ${sort}`
         )
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length === 0 && cleanVA.length !== 0) {
         const result = db.raw(
-            `SELECT *
-            FROM works_w_metadata as works
-            INNER JOIN t_circle ON t_circle.id = works.circle_id
-            INNER JOIN t_va On t_va.va_rjcode = works.rj_code
-            WHERE
-            circle_id = (SELECT id FROM t_circle WHERE t_circle.id IN (${circleQueryId}))
-            AND
-            va_id = (SELECT va_id FROM t_va WHERE t_va.va_id IN (${vaQueryId}))
-            GROUP BY rj_code
+            `SELECT * 
+            FROM 
+            ( 
+            SELECT *
+            FROM works_w_metadata AS works
+            WHERE works.rj_code IN
+            (SELECT va_rjcode
+            FROM t_va
+            WHERE t_va.va_id IN (${vaQueryId})
+            GROUP BY va_rjcode
+            HAVING Count(va_rjcode)=${vaQueryId.length})
+            )
+            WHERE circle_id IN (${circleQueryId})
+            GROUP BY rj_code 
+            HAVING Count(rj_code)=${circleQueryId.length}
             ORDER BY ${order} ${sort}`
         )
         return result
@@ -250,14 +290,25 @@ async function getWorkByKeyword(keyword, order, sort) {
     else if (cleanCircle.length === 0 && cleanTag.length !== 0 && cleanVA.length !== 0) {
         const result = db.raw(
             `SELECT *
-            FROM works_w_metadata as works
-            INNER JOIN t_tag ON t_tag.tag_rjcode = works.rj_code
-            INNER JOIN t_va On t_va.va_rjcode = works.rj_code
-            WHERE
-            tag_id = (SELECT tag_id FROM t_tag WHERE t_tag.tag_id IN (${tagQueryId}))
-            AND
-            va_id = (SELECT va_id FROM t_va WHERE t_va.va_id IN (${vaQueryId}))
-            GROUP BY rj_code
+            FROM works_w_metadata
+            WHERE rj_code IN 
+            (
+            SELECT tag_rjcode
+            FROM
+            (
+            SELECT *
+            FROM t_tag 
+            WHERE t_tag.tag_rjcode IN
+            (SELECT va_rjcode
+            FROM t_va
+            WHERE t_va.va_id IN (17411)
+            GROUP BY va_rjcode
+            HAVING Count(va_rjcode)=1)
+            )
+            WHERE tag_id IN ('48', '144')
+            GROUP BY tag_rjcode
+            HAVING Count(tag_rjcode)=2
+            )
             ORDER BY ${order} ${sort}`
         )
         return result
@@ -265,11 +316,13 @@ async function getWorkByKeyword(keyword, order, sort) {
     else if (cleanCircle.length === 0 && cleanTag.length === 0 && cleanVA.length !== 0) {
         const result = db.raw(
             `SELECT *
-            FROM works_w_metadata as works
-            INNER JOIN t_va On t_va.va_rjcode = works.rj_code
-            WHERE
-            va_id = (SELECT va_id FROM t_va WHERE t_va.va_id IN (${vaQueryId}))
-            GROUP BY rj_code
+            FROM works_w_metadata
+            WHERE rj_code IN 
+            (SELECT va_rjcode
+            FROM t_va
+            WHERE t_va.va_id IN (${vaQueryId})
+            GROUP BY va_rjcode
+            HAVING Count(va_rjcode)=${vaQueryId.length})
             ORDER BY ${order} ${sort}`
         )
         return result
@@ -277,11 +330,13 @@ async function getWorkByKeyword(keyword, order, sort) {
     else if (cleanCircle.length === 0 && cleanTag.length !== 0 && cleanVA.length === 0) {
         const result = db.raw(
             `SELECT *
-            FROM works_w_metadata as works
-            INNER JOIN t_tag ON t_tag.tag_rjcode = works.rj_code
-            WHERE
-            tag_id = (SELECT tag_id FROM t_tag WHERE t_tag.tag_id IN (${tagQueryId}))
-            GROUP BY rj_code
+            FROM works_w_metadata
+            WHERE rj_code IN 
+            (SELECT tag_rjcode
+            FROM t_tag
+            WHERE t_tag.tag_id IN (${tagQueryId})
+            GROUP BY tag_rjcode
+            HAVING Count(tag_rjcode)=${tagQueryId.length})
             ORDER BY ${order} ${sort}`
         )
         return result
