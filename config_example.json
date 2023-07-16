@@ -3,5 +3,9 @@
     "db_path": "Absolute_path/dbName.sqlite3",
     "rootFolders": [],
     "maxParallelism": 8,
-    "worksPerPage": 12
+    "worksPerPage": 12,
+    "offloadMedia": false,
+    "offloadStreamPath": "/media/stream/",
+	"offloadDownloadPath": "/media/download/"
+    
 }

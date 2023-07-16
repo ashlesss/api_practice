@@ -2,10 +2,12 @@ node_modules/
 
 *.sqlite3
 
-static
+static/
 
 .env
 
-*/out*.txt
+out*.txt
 
 config.json
+
+filesystem/utils/getTracksTest.js

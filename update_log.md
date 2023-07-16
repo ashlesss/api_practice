@@ -3,6 +3,15 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 7/15/2023 
+
+### In `./filesystem/utils/getTracks.js`
+1. Add `getWorkTrack` and `toTree` methods that will get work track and insert tracks into a work tree. (Mostly Adopted from [kikoeru project](https://github.com/kikoeru-project)) 
+
+## TODO 
+1. Api url in `toTree` need to change to current back-end api.
+2. Add routers that serve streaming and downloading.
+3. Standardize api url with *kikoeru project*.
 ## 7/14/2023
 
 ### In `./database/query.js`

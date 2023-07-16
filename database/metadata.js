@@ -3,6 +3,7 @@ const knex = require('knex')
 const config = require('../knexfile')
 const db = knex(config.development)
 const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
+const path = require('node:path');
 
 /**
  * This method will not check for the duplicate rjcode.
@@ -13,12 +14,14 @@ const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
  * @param {string} workdir work's directory
  * @returns 
  */
-const insertWorkTodb = (work, workdir) => db.transaction(trx => 
+const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx => 
     trx('ys')
     .insert({
         rj_code: work.workno,
         alt_rj_code: work.alt_rj_code,
         work_title: work.work_name,
+        work_foldername: path.basename(workdir),
+        userset_rootdir: userSetRootDir,
         work_directory: workdir, 
         work_main_img: work.main_img,
         circle_id: work.circle_id,
@@ -97,11 +100,11 @@ const insertWorkTodb = (work, workdir) => db.transaction(trx =>
  * @param {string} workdir work's directory
  * @returns added if success or return err message
  */
-const getWorksData = (rjcode, workdir) => {
+const getWorksData = (rjcode, workdir, userSetRootDir) => {
     return scWorkAllData(rjcode)
     .then(workdata => {
         if (typeof workdata.va !== 'undefined') {
-            return insertWorkTodb(workdata, workdir)
+            return insertWorkTodb(workdata, workdir, userSetRootDir)
             .then(() => {
                 // console.log(`${rjcode} has been added to db`);
                 return 'added'

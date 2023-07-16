@@ -8,6 +8,8 @@ exports.up = function(knex) {
       tbl.string('rj_code').notNullable()
       tbl.integer('alt_rj_code').notNullable()
       tbl.string('work_title').notNullable()
+      tbl.string('userset_rootdir').notNullable()
+      tbl.string('work_foldername').notNullable()
       tbl.string('work_directory').notNullable()
       tbl.string('work_main_img')
       tbl.integer('circle_id')

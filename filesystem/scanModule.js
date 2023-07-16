@@ -15,10 +15,12 @@ const getWorkList = rootFolders => {
     workList = []
     for (const urootFolder of rootFolders) {
         const rootFolder = urootFolder.path
+        const userSetRootDir = urootFolder.name
         if (fs.statSync(rootFolder).isDirectory()) {
             const works = fs.readdirSync(rootFolder)
             for (let i = 0; i < works.length; i++) {
-                (typeof getWorkFolderInfo(rootFolder, works[i]) === 'undefined') ? '' : workList.push(getWorkFolderInfo(rootFolder, works[i]))
+                (typeof getWorkFolderInfo(rootFolder, works[i], userSetRootDir) === 'undefined') ? '' 
+                : workList.push(getWorkFolderInfo(rootFolder, works[i],userSetRootDir))
             }
         }
         else {
@@ -43,7 +45,7 @@ const getWorkList = rootFolders => {
  * @param {string} folderName 
  * @returns An object contains folder RJcode, root folder path and folder name
  */
-const getWorkFolderInfo = (rootFolder, folderName) => {
+const getWorkFolderInfo = (rootFolder, folderName, userSetRootDir) => {
     // console.log(folderName.match(/RJ\d*/));
     // const rjcodeLen = folderName.match(/RJ\d*/)[0].length
     // console.log(rjcodeLen);
@@ -56,14 +58,16 @@ const getWorkFolderInfo = (rootFolder, folderName) => {
                 return {
                     rjcode: folderName.match(/RJ\d{8}/)[0],
                     rootFolder: rootFolder,
-                    name: folderName
+                    name: folderName,
+                    userSetRootDir: userSetRootDir
                 }
             }
             else {
                 return {
                     rjcode: folderName.match(/RJ\d{6}/)[0],
                     rootFolder: rootFolder,
-                    name: folderName
+                    name: folderName,
+                    userSetRootDir: userSetRootDir
                 }
             }
         }
@@ -96,12 +100,11 @@ const uniqueList = workList => {
     for (let i = 0; i < workList.length; i++) {
         for (let j = i + 1; j < workList.length; j++) {
             if (workList[i].rjcode === workList[j].rjcode) {
-                // dupList[workList[i].rjcode] = dupList[workList[i].rjcode] || []
-                // dupList[workList[i].rjcode].push(JSON.stringify(workList[i]))
                 dupList.push({
                     rjcode: workList[i].rjcode,
                     rootFolder: workList[i].rootFolder,
                     name: workList[i].name,
+                    userSetRootDir: workList[i].userSetRootDir
                 })
                 i++;
             }
@@ -135,7 +138,7 @@ const processFolder = folder => md.db('ys')
 .first()
 .then(res => {
     if (res.count === 0) {
-        return md.getWorksData(folder.rjcode, folder.rootFolder)
+        return md.getWorksData(folder.rjcode, (folder.rootFolder + folder.name), folder.userSetRootDir)
         .then(result => {
             if (result === 'added') {
                 return 'added'
@@ -146,7 +149,7 @@ const processFolder = folder => md.db('ys')
         })
     }
     else {
-        md.updateWorkDir(folder.rjcode, folder.rootFolder)
+        md.updateWorkDir(folder.rjcode, (folder.rootFolder + folder.name), folder.userSetRootDir)
         return 'existed'
     }
 })

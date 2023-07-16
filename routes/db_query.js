@@ -1,18 +1,54 @@
 const express = require('express');
 const ysdb = require('../database/query');
 const router = express.Router();
-const { query } = require('express-validator');
+const { query, param } = require('express-validator');
 const { validate } = require('./utils/validateRequest')
 const config = require('../config.json')
 const { formatResult } = require('./utils/formatWorkResult')
+const { getWorkTrack, toTree } = require('../filesystem/utils/getTracks')
+const { db } = require('../database/metadata')
+const path = require('node:path');
 
 // Endpoint /api/query/
 
 router.get('/work/:id', (req, res) => {
-    ysdb.getFullRecord(req.params.id)
-    .then(result => {
-        res.status(200).json(result)
-    })
+    const id = req.params.id
+    if (isNaN(Number(id))) {
+        ysdb.getFullRecord(req.params.id)
+        .then(result => {
+            if (result.message === 'workNotFound') {
+                res.status(404).json(result)
+            }
+            else if (result.error) {
+                res.status(404).json(result)
+            }
+            else {
+                res.status(200).json(result)
+            }
+        })
+    }
+    else {
+        if (id.length === 6 || id.length === 8) {
+            const convertedId = `RJ${id}`
+            console.log(convertedId);
+            ysdb.getFullRecord(convertedId)
+            .then(result => {
+                if (result.message === 'workNotFound') {
+                    res.status(404).json(result)
+                }
+                else if (result.error) {
+                    res.status(404).json(result)
+                }
+                else {
+                    res.status(200).json(result)
+                }
+            })
+        }
+        else {
+            res.status(404).json({message: 'workNotFound'})
+        }
+    }
+    
 })
 
 /**
@@ -90,6 +126,31 @@ router.get('/search/:keyword',
                 res.status(404).json(err)
             }
         })
+})
+
+router.get('/tracks/:id', (req, res) => {
+    db('ys')
+    .select('work_title', 'userset_rootdir', 'work_foldername')
+    .where('rj_code', '=', req.params.id)
+    .first()
+    .then(work => {
+        const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
+        if (rootFolder) {
+            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_foldername))
+            .then(tracks => {
+                res.status(200).send(
+                    toTree(tracks, work.work_title, work.work_foldername, rootFolder)
+                )
+            })
+            .catch(() => res.status(500).send({error: 'Failed to get track list, Check if the files are existed or rescan.'}))
+        }
+        else {
+            res.status(500).send({error: `Folder not found: "${work.userset_rootdir}", Try restart server or rescan.`})
+        }
+    })
+    .catch(err => {
+        res.status(500).send({error: 'Querying database failed', message: err.message})
+    })
 })
 
 module.exports = router;
