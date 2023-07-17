@@ -11,6 +11,7 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
     * `subtitle` --> `fileDirName`
 2. Refactor the `toTree` method object's elements names to prevent from mixed with `title` as title name of certain works.
     * `title` --> `folderDirName`
+3. If folder is deeper, put that folder inside its parent's folder in `toTree` method. **(Only support Linux OS.)**
 
 ### In `./routes/media.js`
 1. Create router that handle download and stream. (Mostly Adopted from [kikoeru project](https://github.com/kikoeru-project))

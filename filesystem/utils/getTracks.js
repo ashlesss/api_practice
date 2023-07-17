@@ -48,26 +48,26 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
     // Insert folders
     tracks.forEach(track => {
         let fatherFolder = tree;
-        const path = track.fileDirName ? track.fileDirName.split('\\') : [];
+        const path = track.fileDirName ? track.fileDirName.split('/') : [];
 
         path.forEach(ifolderDirName => {
-        const index = fatherFolder.findIndex(item => item.type === 'folder' && item.folderDirName === ifolderDirName);
-        if (index === -1) {
-            fatherFolder.push({
-            type: 'folder',
-            folderDirName: ifolderDirName,
-            children: []
+            const index = fatherFolder.findIndex(item => item.type === 'folder' && item.folderDirName === ifolderDirName);
+            if (index === -1) {
+                fatherFolder.push({
+                type: 'folder',
+                folderDirName: ifolderDirName,
+                children: []
+                });
+            }
+            fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.folderDirName === ifolderDirName).children;
             });
-        }
-        fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.folderDirName === ifolderDirName).children;
         });
-    });
     // console.log(tree);
     
     // Insert files
     tracks.forEach(track => {
         let fatherFolder = tree;
-        const paths = track.fileDirName ? track.fileDirName.split('\\') : [];
+        const paths = track.fileDirName ? track.fileDirName.split('/') : [];
         paths.forEach(ifolderDirName => {
         fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.folderDirName === ifolderDirName).children;
         });
