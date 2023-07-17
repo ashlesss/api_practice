@@ -3,14 +3,26 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 7/16/2023
+
+### In `./filesystem/utils/getTracks.js`
+1. Refactor the `getWorkTrack` method object's element names to prevent from mixed with `subtitle` as the subtitle of certain works. And `title` as title name of certain works.
+    * `title` --> `fileName`
+    * `subtitle` --> `fileDirName`
+2. Refactor the `toTree` method object's elements names to prevent from mixed with `title` as title name of certain works.
+    * `title` --> `folderDirName`
+
+### In `./routes/media.js`
+1. Create router that handle download and stream. (Mostly Adopted from [kikoeru project](https://github.com/kikoeru-project))
+
 ## 7/15/2023 
 
 ### In `./filesystem/utils/getTracks.js`
 1. Add `getWorkTrack` and `toTree` methods that will get work track and insert tracks into a work tree. (Mostly Adopted from [kikoeru project](https://github.com/kikoeru-project)) 
 
 ## TODO 
-1. Api url in `toTree` need to change to current back-end api.
-2. Add routers that serve streaming and downloading.
+1. ~~Api url in `toTree` need to change to current back-end api.~~(Completed)
+2. ~~Add routers that serve streaming and downloading.~~(Completed)
 3. Standardize api url with *kikoeru project*.
 ## 7/14/2023
 
@@ -32,16 +44,16 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 
 ### Functionality
 1. Precise *(I guess)* searching is now available
- * Search work by va, circle, tags
- * Support multiple keywords search
+    * Search work by va, circle, tags
+    * Support multiple keywords search
 
 Precise searching is tested with small amounts of data. <br>
 
 **It only support search formats like:**
- * va: `$va:秋山はるる$`
- * circle: `$va:テグラユウキ$`
- * tag: `$tag:环绕音$`
- * RJcode: `RJ12345678` or `RJ123456`
+    * va: `$va:秋山はるる$`
+    * circle: `$va:テグラユウキ$`
+    * tag: `$tag:环绕音$`
+    * RJcode: `RJ12345678` or `RJ123456`
 
 Direct search by va, circle, tag will be supported in the future.
 
@@ -49,9 +61,9 @@ Direct search by va, circle, tag will be supported in the future.
 
 ### In `./routes/db_query.js`
 1. Remove duplicate api routes. **(QUERY API ENDPOINT CHANGED, FRONT-END REFACTOR REQUIRED)**
-  * `/api/query/find/:id` is now moved to `/api/query/work/:id`.
-  * `/api/query/tag/:id` is now deprecated.
-  * `/api/query/record?rjcode` is now moved to `/api/query/work/:id`.
+    * `/api/query/find/:id` is now moved to `/api/query/work/:id`.
+    * `/api/query/tag/:id` is now deprecated.
+    * `/api/query/record?rjcode` is now moved to `/api/query/work/:id`.
 
 ## In `./database/query.js`
 1. Remove unused methods.

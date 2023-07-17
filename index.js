@@ -12,7 +12,7 @@ const io = require('socket.io')(http, {
 const child_process = require('child_process')
 
 io.on("connection", socket => {
-    console.log(socket.id);
+    console.log('Socket connection established');
 
     socket.emit('ON_SCAN_PAGE', 'Connection to server established.')
 

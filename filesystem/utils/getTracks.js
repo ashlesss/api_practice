@@ -20,21 +20,22 @@ const getWorkTrack = (rjcode, dir) => recursiveReaddir(dir)
         const sortedFiles = orderBy(filteredFiles.map((file) => {
             const shortFilePath = file.replace(path.join(dir, '/'), '');
             const dirName = path.dirname(shortFilePath);
+            // console.log(shortFilePath);
       
             return {
-              title: path.basename(file),
-              subtitle: dirName === '.' ? null : dirName,
+              fileName: path.basename(file),
+              fileDirName: dirName === '.' ? null : dirName,
               ext: path.extname(file),
             };
-          }), [v => v.subtitle, v => v.title, v => v.ext]);
+          }), [v => v.fileDirName, v => v.fileName, v => v.ext]);
         //   console.log(sortedFiles);
 
           const sortedHashedFiles = sortedFiles.map(
-            (file, index) => ({
-              title: file.title,
-              subtitle: file.subtitle,
+            (sfile, index) => ({
+              fileName: sfile.fileName,
+              fileDirName: sfile.fileDirName,
               hash: `${rjcode}/${index}`,
-              ext: file.ext,
+              ext: sfile.ext,
             }),
           );
           return sortedHashedFiles;
@@ -47,26 +48,28 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
     // Insert folders
     tracks.forEach(track => {
         let fatherFolder = tree;
-        const path = track.subtitle ? track.subtitle.split('\\') : [];
-        path.forEach(folderName => {
-        const index = fatherFolder.findIndex(item => item.type === 'folder' && item.title === folderName);
+        const path = track.fileDirName ? track.fileDirName.split('\\') : [];
+
+        path.forEach(ifolderDirName => {
+        const index = fatherFolder.findIndex(item => item.type === 'folder' && item.folderDirName === ifolderDirName);
         if (index === -1) {
             fatherFolder.push({
             type: 'folder',
-            title: folderName,
+            folderDirName: ifolderDirName,
             children: []
             });
         }
-        fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.title === folderName).children;
+        fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.folderDirName === ifolderDirName).children;
         });
     });
+    // console.log(tree);
     
     // Insert files
     tracks.forEach(track => {
         let fatherFolder = tree;
-        const paths = track.subtitle ? track.subtitle.split('\\') : [];
-        paths.forEach(folderName => {
-        fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.title === folderName).children;
+        const paths = track.fileDirName ? track.fileDirName.split('\\') : [];
+        paths.forEach(ifolderDirName => {
+        fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.folderDirName === ifolderDirName).children;
         });
     
         // Path controlled by config.offloadMedia, config.offloadStreamPath and config.offloadDownloadPath
@@ -77,8 +80,8 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         // If the folder is deeper:
         // /media/stream/VoiceWork/second/RJ123456/subdirs/track.mp3
         // /media/download/VoiceWork/second/RJ123456/subdirs/track.mp3
-        let offloadStreamUrl = joinFragments(config.offloadStreamPath, rootFolder.name, workDir, track.subtitle || '', track.title);
-        let offloadDownloadUrl = joinFragments(config.offloadDownloadPath, rootFolder.name, workDir, track.subtitle || '', track.title);
+        let offloadStreamUrl = joinFragments(config.offloadStreamPath, rootFolder.name, workDir, track.fileDirName || '', track.fileName);
+        let offloadDownloadUrl = joinFragments(config.offloadDownloadPath, rootFolder.name, workDir, track.fileDirName || '', track.fileName);
         if (process.platform === 'win32') {
         offloadStreamUrl = offloadStreamUrl.replace(/\\/g, '/');
         offloadDownloadUrl = offloadDownloadUrl.replace(/\\/g, '/');
@@ -92,42 +95,43 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         const mediaStreamUrl = config.offloadMedia ? offloadStreamUrl : mediaStreamBaseUrl + track.hash;
         const mediaDownloadUrl = config.offloadMedia ? offloadDownloadUrl : mediaDownloadBaseUrl + track.hash;
     
-        if (track.ext === '.txt' || track.ext === '.lrc' || track.ext === '.srt' || track.ext === '.ass') {
-        fatherFolder.push({
-            type: 'text',
-            hash: track.hash,
-            title: track.title,
-            workTitle,
-            mediaStreamUrl: textStreamBaseUrl,
-            mediaDownloadUrl: textDownloadBaseUrl
-        });
+        if (track.ext === '.txt' || track.ext === '.lrc' || track.ext === '.srt' || track.ext === '.ass') { 
+            fatherFolder.push({
+                type: 'text',
+                hash: track.hash,
+                title: track.fileName,
+                workTitle,
+                mediaStreamUrl: textStreamBaseUrl,
+                mediaDownloadUrl: textDownloadBaseUrl
+            });
         } else if (track.ext === '.jpg' || track.ext === '.jpeg' || track.ext === '.png' || track.ext === '.webp' ) {
-        fatherFolder.push({
-            type: 'image',
-            hash: track.hash,
-            title: track.title,
-            workTitle,
-            mediaStreamUrl,
-            mediaDownloadUrl
-        });
+            fatherFolder.push({
+                type: 'image',
+                hash: track.hash,
+                title: track.fileName,
+                workTitle,
+                mediaStreamUrl,
+                mediaDownloadUrl
+            });
         } else if (track.ext === '.pdf') {
-        fatherFolder.push({
-            type: 'other',
-            hash: track.hash,
-            title: track.title,
-            workTitle,
-            mediaStreamUrl,
-            mediaDownloadUrl
-        });
-        } else {
-        fatherFolder.push({
-            type: 'audio',
-            hash: track.hash,
-            title: track.title,
-            workTitle,
-            mediaStreamUrl,
-            mediaDownloadUrl
-        });
+            fatherFolder.push({
+                type: 'other',
+                hash: track.hash,
+                title: track.fileName,
+                workTitle,
+                mediaStreamUrl,
+                mediaDownloadUrl
+            });
+        }
+        else {
+            fatherFolder.push({
+                type: 'audio',
+                hash: track.hash,
+                title: track.fileName,
+                workTitle,
+                mediaStreamUrl,
+                mediaDownloadUrl
+            });
         }
     });
     // console.log(tree);
@@ -155,5 +159,6 @@ const joinFragments = (baseUrl, ...fragments) => {
 
 module.exports = {
     getWorkTrack,
-    toTree
+    toTree,
+    joinFragments
 }

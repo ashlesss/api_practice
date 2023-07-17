@@ -341,8 +341,8 @@ async function getWorkByKeyword(keyword, order, sort) {
         )
         return result
     }
-    else {
-        throw new Error(`Failed to query database. Check your input or rescan works.`)
-    }
+    // else {
+    //     throw new Error(`Failed to query database. Check your input or rescan works.`)
+    // }
 
 }

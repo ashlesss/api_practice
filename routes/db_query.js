@@ -1,7 +1,7 @@
 const express = require('express');
 const ysdb = require('../database/query');
 const router = express.Router();
-const { query, param } = require('express-validator');
+const { query } = require('express-validator');
 const { validate } = require('./utils/validateRequest')
 const config = require('../config.json')
 const { formatResult } = require('./utils/formatWorkResult')
@@ -92,27 +92,31 @@ router.get('/search/:keyword',
     query('sort').optional({values: null}).isIn(['asc', 'desc']),
     (req, res) => {
         if (!validate(req, res)) return 
-        
+
         const order = req.query.order || 'alt_rj_code'
         const sort = req.query.sort || 'asc'
         ysdb.getWorkByKeyword(req.params.keyword, order, sort)
         .then(result => {
-            // console.log(result);
-            const page = Number(req.query.page) || 1
-            const totalWorks = result.length
-            const totalPage = Math.ceil(totalWorks / Number(config.worksPerPage));
-            const offset = (page - 1) * config.worksPerPage
+            if (typeof(result) !== 'undefined') {
+                const page = Number(req.query.page) || 1
+                const totalWorks = result.length
+                const totalPage = Math.ceil(totalWorks / Number(config.worksPerPage));
+                const offset = (page - 1) * config.worksPerPage
 
-            pagedResult = result.slice(offset, (offset + config.worksPerPage))
-            const formattedResult = formatResult(pagedResult)
-            res.status(200).json({
-                pagination: {
-                    current_page: page,
-                    max_page: totalPage,
-                    total_works: totalWorks
-                },
-                works: formattedResult
-            })
+                pagedResult = result.slice(offset, (offset + config.worksPerPage))
+                const formattedResult = formatResult(pagedResult)
+                res.status(200).json({
+                    pagination: {
+                        current_page: page,
+                        max_page: totalPage,
+                        total_works: totalWorks
+                    },
+                    works: formattedResult
+                })
+            }
+            else {
+                res.status(404).json({error: 'Invalid keywords'})
+            }
         })
         .catch(err => {
             if (err.message) {
@@ -129,6 +133,7 @@ router.get('/search/:keyword',
 })
 
 router.get('/tracks/:id', (req, res) => {
+    // console.log(req.params.id);
     db('ys')
     .select('work_title', 'userset_rootdir', 'work_foldername')
     .where('rj_code', '=', req.params.id)
@@ -142,14 +147,14 @@ router.get('/tracks/:id', (req, res) => {
                     toTree(tracks, work.work_title, work.work_foldername, rootFolder)
                 )
             })
-            .catch(() => res.status(500).send({error: 'Failed to get track list, Check if the files are existed or rescan.'}))
+            .catch(() => res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'}))
         }
         else {
             res.status(500).send({error: `Folder not found: "${work.userset_rootdir}", Try restart server or rescan.`})
         }
     })
     .catch(err => {
-        res.status(500).send({error: 'Querying database failed', message: err.message})
+        res.status(500).send({error: 'Querying database failed', message: err})
     })
 })
 
