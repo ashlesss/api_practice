@@ -3,6 +3,19 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 7/20/2023
+
+### Known `BUGS`
+1. Some works don't have tags also, need to verify that before adding them to database.
+
+## 7/18/2023
+
+### In `./database/query.js`
+1. Search is now support more searching options/keywords
+    * sell: `$sell:1000$`
+    * rate: `$rate:4.8$`
+    * price: `$price:880$`
+
 ## 7/16/2023
 
 ### In `./filesystem/utils/getTracks.js`

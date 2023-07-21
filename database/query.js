@@ -134,7 +134,7 @@ async function getWorkByKeyword(keyword, order, sort) {
         }
     }
     
-    // If the keyword is circle
+    // If the keyword contains circle
     const circle = keyword.match(/circle:.+?(?=\$)/g) || []
     let cleanCircle = []
     let circleQueryId = []
@@ -156,6 +156,7 @@ async function getWorkByKeyword(keyword, order, sort) {
         .pluck('id')
     }
 
+    // If keyword contains va.
     const va = keyword.match(/va:.+?(?=\$)/g) || []
     // console.log(va);
     let cleanVA = []
@@ -180,6 +181,7 @@ async function getWorkByKeyword(keyword, order, sort) {
     }
     // console.log(vaQueryId);
     
+    // If keyword contains tag.
     const tag = keyword.match(/tag:.+?(?=\$)/g) || []
     let cleanTag = []
     let tagQueryId = []
@@ -203,7 +205,15 @@ async function getWorkByKeyword(keyword, order, sort) {
     }
     // console.log(tagQueryId);
 
+    // If keyword contains rate, sell, price.
+    const rates = keyword.match(/rate:.+?(?=\$)/g) || []
+    const sells = keyword.match(/sell:.+?(?=\$)/g) || []
+    const prices = keyword.match(/price:.+?(?=\$)/g) || []
+
+    // Main search block.
     if (cleanCircle.length !== 0 && cleanTag.length !== 0 && cleanVA.length !== 0) {
+        const queryRSP = sortByRSP(rates, sells, prices)
+        // console.log(queryRSP);
         const result = db.raw(
             `SELECT 
             rj_code, alt_rj_code, work_title, work_main_img, circle_id, 
@@ -228,6 +238,7 @@ async function getWorkByKeyword(keyword, order, sort) {
             HAVING Count(tag_rjcode)=${tagQueryId.length}
             )
             WHERE circle_id IN (${circleQueryId})
+            ${queryRSP}
             GROUP BY rj_code
             HAVING Count(rj_code)=${circleQueryId.length}
             ORDER BY ${order} ${sort}`
@@ -235,10 +246,12 @@ async function getWorkByKeyword(keyword, order, sort) {
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length == 0 && cleanVA.length == 0) {
+        const queryRSP = sortByRSP(rates, sells, prices)
         const result = db.raw(
             `SELECT *
             FROM works_w_metadata AS works
             WHERE works.circle_id IN (${circleQueryId})
+            ${queryRSP}
             GROUP BY rj_code
             HAVING Count(rj_code)=${circleQueryId.length}
             ORDER BY ${order} ${sort}`
@@ -246,6 +259,7 @@ async function getWorkByKeyword(keyword, order, sort) {
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length !== 0 && cleanVA.length == 0) {
+        const queryRSP = sortByRSP(rates, sells, prices)
         const result = db.raw(
             `SELECT *
             FROM 
@@ -260,6 +274,7 @@ async function getWorkByKeyword(keyword, order, sort) {
             HAVING Count(tag_rjcode) = ${tagQueryId.length})
             )
             WHERE circle_id IN (${circleQueryId}) 
+            ${queryRSP}
             GROUP BY rj_code
             HAVING Count(rj_code) = ${circleQueryId.length};
             ORDER BY ${order} ${sort}`
@@ -267,6 +282,7 @@ async function getWorkByKeyword(keyword, order, sort) {
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length === 0 && cleanVA.length !== 0) {
+        const queryRSP = sortByRSP(rates, sells, prices)
         const result = db.raw(
             `SELECT * 
             FROM 
@@ -281,6 +297,7 @@ async function getWorkByKeyword(keyword, order, sort) {
             HAVING Count(va_rjcode)=${vaQueryId.length})
             )
             WHERE circle_id IN (${circleQueryId})
+            ${queryRSP}
             GROUP BY rj_code 
             HAVING Count(rj_code)=${circleQueryId.length}
             ORDER BY ${order} ${sort}`
@@ -288,6 +305,7 @@ async function getWorkByKeyword(keyword, order, sort) {
         return result
     }
     else if (cleanCircle.length === 0 && cleanTag.length !== 0 && cleanVA.length !== 0) {
+        const queryRSP = sortByRSP(rates, sells, prices)
         const result = db.raw(
             `SELECT *
             FROM works_w_metadata
@@ -301,19 +319,21 @@ async function getWorkByKeyword(keyword, order, sort) {
             WHERE t_tag.tag_rjcode IN
             (SELECT va_rjcode
             FROM t_va
-            WHERE t_va.va_id IN (17411)
+            WHERE t_va.va_id IN (${vaQueryId})
             GROUP BY va_rjcode
-            HAVING Count(va_rjcode)=1)
+            HAVING Count(va_rjcode)=${vaQueryId.length})
             )
-            WHERE tag_id IN ('48', '144')
+            WHERE tag_id IN (${tagQueryId})
+            ${queryRSP}
             GROUP BY tag_rjcode
-            HAVING Count(tag_rjcode)=2
+            HAVING Count(tag_rjcode)=${tagQueryId.length}
             )
             ORDER BY ${order} ${sort}`
         )
         return result
     }
     else if (cleanCircle.length === 0 && cleanTag.length === 0 && cleanVA.length !== 0) {
+        const queryRSP = sortByRSP(rates, sells, prices)
         const result = db.raw(
             `SELECT *
             FROM works_w_metadata
@@ -321,6 +341,7 @@ async function getWorkByKeyword(keyword, order, sort) {
             (SELECT va_rjcode
             FROM t_va
             WHERE t_va.va_id IN (${vaQueryId})
+            ${queryRSP}
             GROUP BY va_rjcode
             HAVING Count(va_rjcode)=${vaQueryId.length})
             ORDER BY ${order} ${sort}`
@@ -328,6 +349,7 @@ async function getWorkByKeyword(keyword, order, sort) {
         return result
     }
     else if (cleanCircle.length === 0 && cleanTag.length !== 0 && cleanVA.length === 0) {
+        const queryRSP = sortByRSP(rates, sells, prices)
         const result = db.raw(
             `SELECT *
             FROM works_w_metadata
@@ -335,6 +357,7 @@ async function getWorkByKeyword(keyword, order, sort) {
             (SELECT tag_rjcode
             FROM t_tag
             WHERE t_tag.tag_id IN (${tagQueryId})
+            ${queryRSP}
             GROUP BY tag_rjcode
             HAVING Count(tag_rjcode)=${tagQueryId.length})
             ORDER BY ${order} ${sort}`
@@ -345,4 +368,56 @@ async function getWorkByKeyword(keyword, order, sort) {
     //     throw new Error(`Failed to query database. Check your input or rescan works.`)
     // }
 
+    // If no circle, vas, and tags in keywords, search rate, sell, and price only.
+    const queryRSP = sortByRSP(rates, sells, prices)
+    if (queryRSP) {
+        return await db.raw(
+            `SELECT * 
+            FROM works_w_metadata
+            WHERE ${queryRSP.slice(4)}
+            ORDER BY ${order} ${sort}`
+        )
+    }
+    
+}
+
+/**
+ * Return a sorting command for database to sort works by rate, sell, or/and price.
+ * @param {object} rateList Rate sorting keywords
+ * @param {object} sellList Sell sorting keywords
+ * @param {object} priceList Price sorting keywords
+ * @returns A string contains sorting raw commands for database.
+ */
+function sortByRSP(rateList, sellList, priceList) {
+    const all = rateList.concat(sellList, priceList)
+    let whereCondition = ''
+    for (let i = 0; i < all.length; i++) {
+        const irate = all[i].match(/rate:.+/)
+        const isell = all[i].match(/sell:.+/)
+        const iprice = all[i].match(/price:.+/)
+        if (i === 0) {
+            if (irate) {
+                whereCondition = ` AND rate_average_2dp >= ${all[i].slice(5)}`
+            }
+            else if (isell) {
+                whereCondition = ` AND dl_count >= ${all[i].slice(5)}`
+            }
+            else if (iprice) {
+                whereCondition = ` AND official_price >= ${all[i].slice(6)}`
+            }
+        }
+        else {
+            if (irate) {
+                whereCondition = whereCondition + ` AND rate_average_2dp >= ${all[i].slice(5)}`
+            }
+            else if (isell) {
+                whereCondition = whereCondition + ` AND dl_count >= ${all[i].slice(5)}`
+            }
+            else if (iprice) {
+                whereCondition = whereCondition + ` AND official_price >= ${all[i].slice(6)}`
+            }
+        }
+    }
+    return whereCondition
+    
 }
