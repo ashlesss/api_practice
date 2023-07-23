@@ -25,7 +25,7 @@ router.get('/stream/:id/:hashIndex', (req, res) => {
                     track.fileDirName || '', track.fileName);
                 
                 const extName = path.extname(fileName);
-                if (extName === '.txt' || extName === '.lrc') {
+                if (extName === '.txt' || extName === '.lrc' || extName === '.ass' || extName === '.srt') {
                     const fileBuffer = fs.readFileSync(fileName);
                     const charsetMatch = jschardet.detect(fileBuffer).encoding;
                     if (charsetMatch) {
