@@ -25,7 +25,7 @@ router.get('/stream/:id/:hashIndex', (req, res) => {
                     track.fileDirName || '', track.fileName);
                 
                 const extName = path.extname(fileName);
-                if (extName === '.txt' || extName === '.lrc' || extName === '.ass' || extName === '.srt') {
+                if (extName === '.txt' || extName === '.lrc' || extName === '.ass' || extName === '.srt' || extName === '.vtt') {
                     const fileBuffer = fs.readFileSync(fileName);
                     const charsetMatch = jschardet.detect(fileBuffer).encoding;
                     if (charsetMatch) {
@@ -34,12 +34,12 @@ router.get('/stream/:id/:hashIndex', (req, res) => {
                 }
                 if (extName === '.flac') {
                     // iOS not support audio/x-flac
-                    res.setHeader('Content-Type', `audio/flac`);
+                    res.set('Content-Type', `audio/flac`);
                 }
                 // Offload from express, 302 redirect to a virtual directory in a reverse proxy like Nginx
                 // Only redirect media files, not including text files and lrcs because we need charset detection
                 // so that the browser properly renders them
-                if (config.offloadMedia && extName !== '.txt' && extName !== '.lrc') {
+                if (config.offloadMedia && extName !== '.txt' && extName !== '.lrc' && extName !== '.ass' && extName !== '.srt' && extName !== '.vtt') {
                 // Path controlled by config.offloadMedia and config.offloadStreamPath
                 // By default: /media/stream/VoiceWork/RJ123456/subdirs/track.mp3
                 // If the folder is deeper: /media/stream/VoiceWork/second/RJ123456/subdirs/track.mp3
@@ -102,7 +102,17 @@ router.get('/download/:id/:hashindex', (req, res) => {
                 } 
                 else {
                     // By default, serve file through express
-                    res.download(path.join(rootFolder.path, work.work_foldername, track.fileDirName || '', track.fileName));
+                    const rootFolderPath = rootFolder.path
+                    const fileName = work.work_foldername
+                    const trackPath = track.fileDirName || ''
+                    const filePath = path.join(rootFolderPath, fileName, trackPath, track.fileName)
+                    if (req.headers['x-requested-with'] === 'XMLHttpRequest') {
+                        res.sendFile(filePath)
+                    }
+                    else {
+                        res.download(filePath);
+                    }
+                    
                 }
             })
             .catch(err => {
