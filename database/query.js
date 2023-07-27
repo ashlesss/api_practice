@@ -101,7 +101,12 @@ async function getWorks(page, order, sort) {
         return {pagination: pagination, works: works}
     }
     else {
-        return {message: "no more page"}
+        const pagination = {
+            current_page: Number(page),
+            max_page: totalPage,
+            total_works: totalWorks[0].count,
+        }
+        return {pagination, works: []}
     }
 }
 

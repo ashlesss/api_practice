@@ -70,12 +70,7 @@ router.get('/works',
         const currentOrder = req.query.order || 'alt_rj_code'
         const currentSort = req.query.sort || 'desc'
         ysdb.getWorks(currentPage, currentOrder, currentSort).then(ysdb => {
-            if (ysdb.message) {
-                res.status(404).json(ysdb);
-            }
-            else {
-                res.status(200).json(ysdb);
-            }
+            res.status(200).json(ysdb);
         })
         .catch( error => {
             res.status(500).json({message: `cannot get rc with error message: ${error}`});

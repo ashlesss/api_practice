@@ -14,6 +14,11 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 ### Known `BUGS`
 1. ~~Some works don't have tags also, need to verify that before adding them to database.~~(Handled by front-end)
 
+## 7/27/2023
+
+### In `./routes/db_query.js`
+1. When users query page number that is out of maximum page range, return pagination info and empty array of works instead of return 404.
+
 ## 7/18/2023
 
 ### In `./database/query.js`
