@@ -7,7 +7,7 @@ const urljoin = require('url-join');
 const getWorkTrack = (rjcode, dir) => recursiveReaddir(dir)
     .then(files => {
         const filteredFiles = files.filter(file => {
-            const ext = path.extname(file)
+            const ext = path.extname(file).toLowerCase()
 
             return (ext === '.mp3' || ext === '.ogg' || ext === '.opus' || ext === '.wav' || ext === '.aac'
             || ext === '.flac' || ext === '.webm' || ext === '.mp4'|| ext === '.m4a' 

@@ -3,6 +3,17 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 7/28/2023
+
+### In `./scraper/dlsite.js`
+1. Make redirected works' main image RJ code as same as the the RJ code on users' work folders.
+
+### In `./filesystem/utils/getTracks.js`
+1. Make all extension names to lower cases in order to make better file sorting.
+
+### TODO 
+1. Be able to scrape works that are translated by dlsite official. (Same work but different RJ code)
+
 ## 7/24/2023
 
 ### In `./routes/media.js`

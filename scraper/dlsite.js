@@ -133,7 +133,7 @@ const scGetSaledata = rjcode => new Promise((resolve, reject) => {
  * @param {string} rjcode 
  * @return Img name
  */
-const scGetImg = rjcode => new Promise((resolve, reject) => {
+const scGetImg = (rjcode, folderRjcode) => new Promise((resolve, reject) => {
     let sid;
     if (rjcode.length === 8) {
         let nrj = Number(rjcode.slice(2))
@@ -161,17 +161,28 @@ const scGetImg = rjcode => new Promise((resolve, reject) => {
             responseType: 'stream'
         })
         .then(res => {
-            res.data.pipe(fs.createWriteStream(`${imgPath}${rjcode}_img_main.jpg`));
-            res.data.on('end', () => {
-                console.log(`${rjcode}_img_main.jpg download completed.`);
-                resolve({
-                    main_img: `${rjcode}_img_main.jpg`
-                });
-            })
+            if (folderRjcode) {
+                res.data.pipe(fs.createWriteStream(`${imgPath}${folderRjcode}_img_main.jpg`));
+                res.data.on('end', () => {
+                    console.log(`${folderRjcode}_img_main.jpg download completed.`);
+                    resolve({
+                        main_img: `${folderRjcode}_img_main.jpg`
+                    });
+                })
+            }
+            else {
+                res.data.pipe(fs.createWriteStream(`${imgPath}${rjcode}_img_main.jpg`));
+                res.data.on('end', () => {
+                    console.log(`${rjcode}_img_main.jpg download completed.`);
+                    resolve({
+                        main_img: `${rjcode}_img_main.jpg`
+                    });
+                })
+            }
             
         })
         .catch(err => {
-            reject(`Download ${rjcode} cover failed with message: ${err.message}`);
+            reject(`Download ${folderRjcode ? folderRjcode : rjcode} cover failed with message: ${err.message}`);
         })
     }
 })
@@ -188,7 +199,7 @@ const scWorkAllData = rjcode => {
         return scGetSaledata(metadata.workno)
         .then(saledata => {
             if (metadata.original_workno) {
-                return scGetImg(metadata.original_workno)
+                return scGetImg(metadata.original_workno, metadata.workno)
                 .then(imgName => {
                     return Object.assign(work, metadata, saledata, imgName)
                 })
