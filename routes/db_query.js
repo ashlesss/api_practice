@@ -14,41 +14,34 @@ const path = require('node:path');
 router.get('/work/:id', (req, res) => {
     const id = req.params.id
     if (isNaN(Number(id))) {
-        ysdb.getFullRecord(req.params.id)
-        .then(result => {
-            if (result.message === 'workNotFound') {
-                res.status(404).json(result)
-            }
-            else if (result.error) {
-                res.status(404).json(result)
-            }
-            else {
-                res.status(200).json(result)
-            }
+        db('works_w_metadata')
+        .select('*')
+        .where({rj_code: id})
+        .then(work => {
+            res.status(200).json(ysdb.getFullRecord(work[0]))
+        })
+        .catch(err => {
+            res.status(404).json(err)
         })
     }
     else {
         if (id.length === 6 || id.length === 8) {
             const convertedId = `RJ${id}`
-            console.log(convertedId);
-            ysdb.getFullRecord(convertedId)
-            .then(result => {
-                if (result.message === 'workNotFound') {
-                    res.status(404).json(result)
-                }
-                else if (result.error) {
-                    res.status(404).json(result)
-                }
-                else {
-                    res.status(200).json(result)
-                }
+            // console.log(convertedId);
+            db('works_w_metadata')
+            .select('*')
+            .where({rj_code: convertedId})
+            .then(work => {
+                res.status(200).json(ysdb.getFullRecord(work[0]))
+            })
+            .catch(err => {
+                res.status(404).json(err)
             })
         }
         else {
             res.status(404).json({message: 'workNotFound'})
         }
     }
-    
 })
 
 /**
@@ -61,15 +54,18 @@ router.get('/work/:id', (req, res) => {
 router.get('/works', 
     query('page').optional({values: null}).isInt(),
     query('order').optional({values: null}).isIn(['alt_rj_code', 
-    'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw']),
+    'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw', 
+    'rate_average_2dp', 'random']),
     query('sort').optional({values: null}).isIn(['asc', 'desc']),
+    query('subtitle').optional({values: null}).isInt(),
     (req, res) => {
         if (!validate(req, res)) return
         
-        const currentPage = req.query.page || 1
+        const currentPage = Number(req.query.page) || 1
         const currentOrder = req.query.order || 'alt_rj_code'
         const currentSort = req.query.sort || 'desc'
-        ysdb.getWorks(currentPage, currentOrder, currentSort).then(ysdb => {
+        const subtitle = Number(req.query.subtitle) || 0
+        ysdb.getWorks(currentPage, currentOrder, currentSort, subtitle).then(ysdb => {
             res.status(200).json(ysdb);
         })
         .catch( error => {
@@ -83,14 +79,17 @@ router.get('/works',
 router.get('/search/:keyword', 
     query('page').optional({values: null}).isInt(),
     query('order').optional({values: null}).isIn(['alt_rj_code', 
-    'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw']),
+    'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw', 
+    'rate_average_2dp', 'random']),
     query('sort').optional({values: null}).isIn(['asc', 'desc']),
+    query('subtitle').optional({values: null}).isInt(),
     (req, res) => {
         if (!validate(req, res)) return 
 
         const order = req.query.order || 'alt_rj_code'
         const sort = req.query.sort || 'asc'
-        ysdb.getWorkByKeyword(req.params.keyword, order, sort)
+        const subtitle = Number(req.query.subtitle) || 0
+        ysdb.getWorkByKeyword(req.params.keyword, order, sort, subtitle)
         .then(result => {
             if (typeof(result) !== 'undefined') {
                 const page = Number(req.query.page) || 1

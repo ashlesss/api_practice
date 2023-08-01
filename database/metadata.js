@@ -31,7 +31,8 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
         regist_date: work.regist_date,
         rate_count: work.rate_count,
         rate_average_2dp: work.rate_average_2dp,
-        rate_count_detail: work.rate_count_detail
+        rate_count_detail: work.rate_count_detail,
+        has_subtitle: work.has_subtitle
     })
     .onConflict().ignore()
     .then(() => {

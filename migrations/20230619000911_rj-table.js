@@ -20,6 +20,7 @@ exports.up = function(knex) {
       tbl.integer('rate_count')
       tbl.float('rate_average_2dp')
       tbl.string('rate_count_detail')
+      tbl.boolean('has_subtitle')
       tbl.timestamps(true, true)
 
       tbl.foreign('circle_id').references('id').inTable('t_circle')
@@ -75,7 +76,8 @@ exports.up = function(knex) {
         ys.regist_date,
         ys.rate_count,
         ys.rate_average_2dp,
-        ys.rate_count_detail
+        ys.rate_count_detail,
+        ys.has_subtitle
       FROM ys
       JOIN t_circle ON t_circle.id = ys.circle_id
       ) AS baseQuery

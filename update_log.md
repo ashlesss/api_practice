@@ -3,6 +3,29 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 7/31/2023
+
+### In `./routes/db_query.js`
+1. Handle `subtitle` sorting.
+
+## In `./database/query.js`
+1. Handle `subtitle` sorting
+2. Delete unnecessary step of reformating the work query result.
+
+## 7/30/2023 
+
+### In `./scraper/dlsite.js`
+1. Add `has_subtitle` to database.
+
+### In `./routes/db_query.js`
+1. Handle `random` queries.
+
+### In `./database/query.js` 
+1. Handle `random` queries.
+
+### In `./database/metadata.js`
+1. Add `has_subtitle` value to database.
+
 ## 7/28/2023
 
 ### In `./scraper/dlsite.js`
@@ -13,6 +36,14 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 
 ### TODO 
 1. Be able to scrape works that are translated by dlsite official. (Same work but different RJ code)
+
+## 7/30/2023
+
+### In `./routes/db_query.js`
+1. Handle `random` query.
+
+### In `./database/query.js`
+1. Handle `random` query.
 
 ## 7/24/2023
 

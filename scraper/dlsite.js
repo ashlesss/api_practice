@@ -36,6 +36,17 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
             work.genres = JSON.stringify(mdata[0].genres)
             work.maker_name = mdata[0].maker_name
             work.va = JSON.stringify(mdata[0].creaters.voice_by)
+            if (mdata[0].options) {
+                if (mdata[0].options.match(/\bCHI_HANS\b/) || mdata[0].options.match(/\bCHI_HANT\b/)) {
+                    work.has_subtitle = true
+                }
+                else {
+                    work.has_subtitle = false
+                }
+            }
+            else {
+                work.has_subtitle = false
+            }
             resolve(work)
         }
         else {
@@ -85,6 +96,17 @@ const redirectedGetMetadata = (originRjcode, rworkname, folderRjcode) => new Pro
         work.genres = JSON.stringify(rmdata[0].genres)
         work.maker_name = rmdata[0].maker_name
         work.va = JSON.stringify(rmdata[0].creaters.voice_by)
+        if (rmdata[0].options) {
+            if (rmdata[0].options.match(/\bCHI_HANS\b/) || rmdata[0].options.match(/\bCHI_HANT\b/)) {
+                work.has_subtitle = true
+            }
+            else {
+                work.has_subtitle = false
+            }
+        }
+        else {
+            work.has_subtitle = false
+        }
         resolve(work)
     })
     .catch(err => {

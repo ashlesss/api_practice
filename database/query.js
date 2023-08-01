@@ -12,32 +12,15 @@ module.exports = {
 
 /**
  * 
- * @param {string} rjcode RJcode 
+ * @param {object} work Work object
  * @returns Formatted work record.
  */
-async function getFullRecord(rjcode) {
-    try { 
-        const record = await db('works_w_metadata')
-        .select('*')
-        .where({rj_code: rjcode})
-
-        if (record.length === 0) {
-            return {message: "workNotFound"};
-        }
-        else {
-            // Parse stringified values
-            delete record[0].circleObj
-            record[0]['rate_count_detail'] = JSON.parse(record[0].rate_count_detail)
-            record[0]['vas'] = JSON.parse(record[0].vas)
-            record[0]['tags'] = JSON.parse(record[0].tags)
-            return record[0]
-        }
-    } catch(err) {
-        return {
-            error: err,
-            message: err.message
-        }
-    }
+function getFullRecord(work) {
+    delete work.circleObj
+    work['rate_count_detail'] = JSON.parse(work.rate_count_detail)
+    work['vas'] = JSON.parse(work.vas)
+    work['tags'] = JSON.parse(work.tags)
+    return work
 }
 
 /**
@@ -45,91 +28,75 @@ async function getFullRecord(rjcode) {
  * @param {number} page Page number  
  * @param {string} order By RJ code, created date, rate_average_2dp, etc.
  * @param {string} sort By ascending or descending order.
+ * @param {number} subtitle 1 means sort works by have subtitle, 0 means sort by subtitle is off.
  * @returns Object with pagination and works.
  */
-async function getWorks(page, order, sort) {
-    // console.log(page); // String
+async function getWorks(page, order, sort, subtitle) {
     const worksPerPage = Config.worksPerPage;
-    const totalWorks = await db('ys').count({count: 'rj_code'});
+    const sortSub = sortBySubtitle(subtitle, 0)
+    const orderQuery = randomOrder(order)
+
+    const curWorks = await db.raw(
+        `SELECT *
+        FROM works_w_metadata
+        ${sortSub}
+        ORDER BY ${orderQuery} ${sort}
+        LIMIT ${worksPerPage}
+        OFFSET ${(page - 1) * worksPerPage}`
+    )
+    
+    const totalWorks = sortSub ? await db('works_w_metadata').where({has_subtitle: 1}).count({count: 'rj_code'}) 
+        : await db('works_w_metadata').count({count: 'rj_code'})
     const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
 
-    // First page
-    if (page === '1') {
-        const curWorks = await db('ys')
-        .orderBy(order, sort)
-        .limit(worksPerPage)
-        .offset(0)
+    let works = [];
 
-        let works = [];
+    // Get pagination info first
+    const pagination = {
+        current_page: page,
+        max_page: totalPage,
+        total_works: totalWorks[0].count,
+    }
 
-        // Get pagination info first
-        const pagination = {
-            current_page: Number(page),
-            max_page: totalPage,
-            total_works: totalWorks[0].count,
-        }
+    // console.log(curWorks);
 
-        // Then get works and tags 
+    if (curWorks.length !== 0) {
         for (let i = 0; i < curWorks.length; i++) {
-            works.push(await getFullRecord(curWorks[i].rj_code))
+            works.push(getFullRecord(curWorks[i]))
         }
-        return {pagination: pagination, works: works}
     }
-    // Other page than first page
-    else if (Number(page) <= totalPage) {
-        // console.log(worksPerPage * (Number(page) - 1));
-        const curWorks = await db('ys')
-        .orderBy(order, sort)
-        .limit(worksPerPage)
-        .offset((page - 1) * worksPerPage)
 
-        //when 3 works per page (2 * (Number(page) - 1) -1)
-
-        let works = [];
-
-        // Get pagination info first
-        const pagination = {
-            current_page: Number(page),
-            max_page: totalPage,
-            total_works: totalWorks[0].count,
-        }
-
-        // Then get works and tags 
-        for (let i = 0; i < curWorks.length; i++) {
-            works.push(await getFullRecord(curWorks[i].rj_code))
-        }
-        return {pagination: pagination, works: works}
-    }
-    else {
-        const pagination = {
-            current_page: Number(page),
-            max_page: totalPage,
-            total_works: totalWorks[0].count,
-        }
-        return {pagination, works: []}
-    }
+    return {pagination: pagination, works: works}
 }
 
 /**
  * This method will handle keyword search and return works sorted by keywords.
  * @param {string} keyword Searching keyword by va, tag, circle.
- * @param {string} order ['alt_rj_code', 'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw']
+ * @param {string} order ['alt_rj_code', 'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw', 'random']
  * @param {string} sort By ascending or descending order.
  * @returns Work results if success. Throw error when fail.
  */
-async function getWorkByKeyword(keyword, order, sort) {
+async function getWorkByKeyword(keyword, order, sort, subtitle) {
+    const sortSub = sortBySubtitle(subtitle, 1)
+    const orderQuery = randomOrder(order)
     // If the keyword is a RJ code
     const rjcode = keyword.match(/RJ\d*/i)
     if (rjcode) {
         if (rjcode[0].length === 10) {
-            return await db('works_w_metadata')
-            .select('*')
-            .where({rj_code: rjcode[0]})
+            return await db.raw(
+                `SELECT *
+                FROM works_w_metadata
+                WHERE rj_code = '${rjcode[0]}'
+                ${sortSub}`
+            )
         }
         else if (rjcode[0].length === 8) {
-            return await db('works_w_metadata')
-            .select('*')
-            .where({rj_code: rjcode[0]})
+            return await db.raw(
+                `SELECT *
+                FROM works_w_metadata
+                WHERE rj_code = '${rjcode[0]}'
+                ${sortSub}`
+            )
         }
         else {
             // console.log(`invalid rjcode`);
@@ -244,9 +211,10 @@ async function getWorkByKeyword(keyword, order, sort) {
             )
             WHERE circle_id IN (${circleQueryId})
             ${queryRSP}
+            ${sortSub}
             GROUP BY rj_code
             HAVING Count(rj_code)=${circleQueryId.length}
-            ORDER BY ${order} ${sort}`
+            ORDER BY ${orderQuery} ${sort}`
         )
         return result
     }
@@ -257,9 +225,10 @@ async function getWorkByKeyword(keyword, order, sort) {
             FROM works_w_metadata AS works
             WHERE works.circle_id IN (${circleQueryId})
             ${queryRSP}
+            ${sortSub}
             GROUP BY rj_code
             HAVING Count(rj_code)=${circleQueryId.length}
-            ORDER BY ${order} ${sort}`
+            ORDER BY ${orderQuery} ${sort}`
         )
         return result
     }
@@ -280,9 +249,10 @@ async function getWorkByKeyword(keyword, order, sort) {
             )
             WHERE circle_id IN (${circleQueryId}) 
             ${queryRSP}
+            ${sortSub}
             GROUP BY rj_code
             HAVING Count(rj_code) = ${circleQueryId.length};
-            ORDER BY ${order} ${sort}`
+            ORDER BY ${orderQuery} ${sort}`
         )
         return result
     }
@@ -303,9 +273,10 @@ async function getWorkByKeyword(keyword, order, sort) {
             )
             WHERE circle_id IN (${circleQueryId})
             ${queryRSP}
+            ${sortSub}
             GROUP BY rj_code 
             HAVING Count(rj_code)=${circleQueryId.length}
-            ORDER BY ${order} ${sort}`
+            ORDER BY ${orderQuery} ${sort}`
         )
         return result
     }
@@ -330,10 +301,11 @@ async function getWorkByKeyword(keyword, order, sort) {
             )
             WHERE tag_id IN (${tagQueryId})
             ${queryRSP}
+            ${sortSub}
             GROUP BY tag_rjcode
             HAVING Count(tag_rjcode)=${tagQueryId.length}
             )
-            ORDER BY ${order} ${sort}`
+            ORDER BY ${orderQuery} ${sort}`
         )
         return result
     }
@@ -347,9 +319,10 @@ async function getWorkByKeyword(keyword, order, sort) {
             FROM t_va
             WHERE t_va.va_id IN (${vaQueryId})
             ${queryRSP}
+            ${sortSub}
             GROUP BY va_rjcode
             HAVING Count(va_rjcode)=${vaQueryId.length})
-            ORDER BY ${order} ${sort}`
+            ORDER BY ${orderQuery} ${sort}`
         )
         return result
     }
@@ -363,9 +336,10 @@ async function getWorkByKeyword(keyword, order, sort) {
             FROM t_tag
             WHERE t_tag.tag_id IN (${tagQueryId})
             ${queryRSP}
+            ${sortSub}
             GROUP BY tag_rjcode
             HAVING Count(tag_rjcode)=${tagQueryId.length})
-            ORDER BY ${order} ${sort}`
+            ORDER BY ${orderQuery} ${sort}`
         )
         return result
     }
@@ -380,7 +354,8 @@ async function getWorkByKeyword(keyword, order, sort) {
             `SELECT * 
             FROM works_w_metadata
             WHERE ${queryRSP.slice(4)}
-            ORDER BY ${order} ${sort}`
+            ${sortSub}
+            ORDER BY ${orderQuery} ${sort}`
         )
     }
     
@@ -425,4 +400,45 @@ function sortByRSP(rateList, sellList, priceList) {
     }
     return whereCondition
     
+}
+
+/**
+ * 
+ * @param {number} subtitle Sorting by has subtitle switch. 1 means on, 0 means off.
+ * @param {number} needAND A switch that controls query command format.
+ * @returns Query command
+ */
+function sortBySubtitle(subtitle, needAND) {
+    if (needAND === 1) {
+        if (subtitle === 1) {
+            return `AND has_subtitle = 1`
+        }
+        else {
+            return ''
+        }
+    }
+    else {
+        if (subtitle === 1) {
+            return `WHERE has_subtitle = 1`
+        }
+        else {
+            return ''
+        }
+    }
+    
+}
+
+/**
+ * 
+ * @param {string} order Order query string.
+ * @returns if order query is random it will return 'alt_rj_code % 7', 
+ * if not it will return the original order parameter.
+ */
+function randomOrder(order) {
+    if (order === 'random') {
+        return `alt_rj_code % 7`
+    }
+    else {
+        return order
+    }
 }
