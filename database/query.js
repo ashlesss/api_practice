@@ -105,6 +105,16 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
             throw e
         }
     }
+
+    const altRJcode = keyword.match(/\b(\d{6}|\d{8})\b/)
+    if (altRJcode) {
+        return db.raw(
+            `SELECT *
+            FROM works_w_metadata
+            WHERE alt_rj_code = '${altRJcode[0]}'
+            ${sortSub}`
+        )
+    }
     
     // If the keyword contains circle
     const circle = keyword.match(/circle:.+?(?=\$)/g) || []
