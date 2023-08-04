@@ -3,6 +3,14 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 8/3/2023
+
+### In `./database/query.js`
+1. Refactor Regex for matching search keyword.
+
+### In `./routes/db_query.js`
+1. If the search keywords didn't have any match in the data or in Regex, return http code 200 with pagination and empty `works`.
+
 ## 8/2/2023
 
 ### In `./database/query.js`

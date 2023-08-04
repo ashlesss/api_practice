@@ -117,84 +117,91 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
     }
     
     // If the keyword contains circle
-    const circle = keyword.match(/circle:.+?(?=\$)/g) || []
+    // const circle = keyword.match(/circle:.+?(?=\$)/g) || []
     let cleanCircle = []
+    const matchCircle = [...keyword.matchAll(/\$(circle):([^\$\s]+)\$/g)]
+    matchCircle.forEach(match => {
+        cleanCircle.push(`${match[2]}`)
+    })
     let circleQueryId = []
-    if (circle.length !== 0) {
-        for (let i = 0; i < circle.length; i++) {
-            cleanCircle.push(circle[i].match(/[^circle:].+/)[0])
-        }
+    if (cleanCircle.length !== 0) {
+        // for (let i = 0; i < circle.length; i++) {
+        //     cleanCircle.push(circle[i].match(/[^circle:].+/)[0])
+        // }
 
         circleQueryId = await db('t_circle')
         .whereIn('circle_name', cleanCircle)
         .select('id')
         .pluck('id')
     }
-    else if (circle.length === 1) {
-        cleanCircle = circle.match(/[^circle:].+/)[0]
-        circleQueryId = await db('t_circle')
-        .whereIn('circle_name', cleanCircle)
-        .select('id')
-        .pluck('id')
-    }
+    // else if (circle.length === 1) {
+    //     cleanCircle = circle.match(/[^circle:].+/)[0]
+    //     circleQueryId = await db('t_circle')
+    //     .whereIn('circle_name', cleanCircle)
+    //     .select('id')
+    //     .pluck('id')
+    // }
 
     // If keyword contains va.
-    const va = keyword.match(/va:.+?(?=\$)/g) || []
+    // const va = keyword.match(/va:.+?(?=\$)/g) || []
     // console.log(va);
     let cleanVA = []
+    const matchVA = [...keyword.matchAll(/\$(va):([^\$\s]+)\$/g)] 
+    matchVA.forEach(match => {
+        cleanVA.push(`${match[2]}`)
+    })
     let vaQueryId = []
-    if (va.length !== 0 ) {
-        for (let a = 0; a < va.length; a++) {
-            cleanVA.push(va[a].match(/[^va:].+/)[0])
-        }
+    if (cleanVA.length !== 0 ) {
+        // for (let a = 0; a < va.length; a++) {
+        //     cleanVA.push(va[a].match(/[^va:].+/)[0])
+        // }
         // console.log(cleanVA);s
         vaQueryId = await db('t_va_id')
         .whereIn('va_name', cleanVA)
         .select('id')
         .pluck('id')
     }
-    else if (va.length === 1) {
-        cleanVA = va.match(/[^va:].+/)[0]
-        // console.log(cleanVA);
-        vaQueryId = await db('t_va_id')
-        .whereIn('va_name', cleanVA)
-        .select('id')
-        .pluck('id')
-    }
+    // else if (va.length === 1) {
+    //     cleanVA = va.match(/[^va:].+/)[0]
+    //     // console.log(cleanVA);
+    //     vaQueryId = await db('t_va_id')
+    //     .whereIn('va_name', cleanVA)
+    //     .select('id')
+    //     .pluck('id')
+    // }
     // console.log(vaQueryId);
     
     // If keyword contains tag.
-    const tag = keyword.match(/tag:.+?(?=\$)/g) || []
+    // const tag = keyword.match(/tag:.+?(?=\$)/g) || []
     let cleanTag = []
+    const matchTag = [...keyword.matchAll(/\$(tag):([^\$\s]+)\$/g)]
+    matchTag.forEach(match => {
+        cleanTag.push(`${match[2]}`)
+    })
     let tagQueryId = []
-    if (tag.length !== 0) {
-        for (let i = 0; i < tag.length; i++) {
-            cleanTag.push(tag[i].match(/[^tag:].+/)[0])
-        }
+    if (cleanTag.length !== 0) {
+        // for (let i = 0; i < tag.length; i++) {
+        //     cleanTag.push(tag[i].match(/[^tag:].+/)[0])
+        // }
         // console.log(cleanTag);
         tagQueryId = await db('t_tag_id')
         .whereIn('tag_name', cleanTag)
         .select('id')
         .pluck('id')
     }
-    else if (tag.length === 1) {
-        cleanTag = tag[0].match(/[^tag:].+/)[0]
-        // console.log(cleanTag);
-        tagQueryId = await db('t_tag_id')
-        .whereIn('tag_name', cleanTag)
-        .select('id')
-        .pluck('id')
-    }
+    // else if (tag.length === 1) {
+    //     cleanTag = tag[0].match(/[^tag:].+/)[0]
+    //     // console.log(cleanTag);
+    //     tagQueryId = await db('t_tag_id')
+    //     .whereIn('tag_name', cleanTag)
+    //     .select('id')
+    //     .pluck('id')
+    // }
     // console.log(tagQueryId);
-
-    // If keyword contains rate, sell, price.
-    const rates = keyword.match(/rate:.+?(?=\$)/g) || []
-    const sells = keyword.match(/sell:.+?(?=\$)/g) || []
-    const prices = keyword.match(/price:.+?(?=\$)/g) || []
 
     // Main search block.
     if (cleanCircle.length !== 0 && cleanTag.length !== 0 && cleanVA.length !== 0) {
-        const queryRSP = sortByRSP(rates, sells, prices)
+        const queryRSP = sortByRSP(keyword)
         // console.log(queryRSP);
         const result = db.raw(
             `SELECT 
@@ -229,7 +236,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length == 0 && cleanVA.length == 0) {
-        const queryRSP = sortByRSP(rates, sells, prices)
+        const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
             FROM works_w_metadata AS works
@@ -243,7 +250,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length !== 0 && cleanVA.length == 0) {
-        const queryRSP = sortByRSP(rates, sells, prices)
+        const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
             FROM 
@@ -267,7 +274,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         return result
     }
     else if (cleanCircle.length !== 0 && cleanTag.length === 0 && cleanVA.length !== 0) {
-        const queryRSP = sortByRSP(rates, sells, prices)
+        const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT * 
             FROM 
@@ -291,7 +298,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         return result
     }
     else if (cleanCircle.length === 0 && cleanTag.length !== 0 && cleanVA.length !== 0) {
-        const queryRSP = sortByRSP(rates, sells, prices)
+        const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
             FROM works_w_metadata
@@ -320,7 +327,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         return result
     }
     else if (cleanCircle.length === 0 && cleanTag.length === 0 && cleanVA.length !== 0) {
-        const queryRSP = sortByRSP(rates, sells, prices)
+        const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
             FROM works_w_metadata
@@ -337,7 +344,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         return result
     }
     else if (cleanCircle.length === 0 && cleanTag.length !== 0 && cleanVA.length === 0) {
-        const queryRSP = sortByRSP(rates, sells, prices)
+        const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
             FROM works_w_metadata
@@ -358,12 +365,12 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
     // }
 
     // If no circle, vas, and tags in keywords, search rate, sell, and price only.
-    const queryRSP = sortByRSP(rates, sells, prices)
+    const queryRSP = sortByRSP(keyword)
     if (queryRSP) {
         return await db.raw(
             `SELECT * 
             FROM works_w_metadata
-            WHERE ${queryRSP.slice(4)}
+            WHERE ${queryRSP.slice(5)}
             ${sortSub}
             ORDER BY ${orderQuery} ${sort}`
         )
@@ -373,43 +380,25 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
 
 /**
  * Return a sorting command for database to sort works by rate, sell, or/and price.
- * @param {object} rateList Rate sorting keywords
- * @param {object} sellList Sell sorting keywords
- * @param {object} priceList Price sorting keywords
+ * @param {string} keyword Keyword from user's search keyword.
  * @returns A string contains sorting raw commands for database.
  */
-function sortByRSP(rateList, sellList, priceList) {
-    const all = rateList.concat(sellList, priceList)
+function sortByRSP(keyword) {
+    const rate = [...keyword.matchAll(/\$(rate):([^\$\s]+)\$/g)]
+    const sell = [...keyword.matchAll(/\$(sell):([^\$\s]+)\$/g)]
+    const price = [...keyword.matchAll(/\$(price):([^\$\s]+)\$/g)]
     let whereCondition = ''
-    for (let i = 0; i < all.length; i++) {
-        const irate = all[i].match(/rate:.+/)
-        const isell = all[i].match(/sell:.+/)
-        const iprice = all[i].match(/price:.+/)
-        if (i === 0) {
-            if (irate) {
-                whereCondition = ` AND rate_average_2dp >= ${all[i].slice(5)}`
-            }
-            else if (isell) {
-                whereCondition = ` AND dl_count >= ${all[i].slice(5)}`
-            }
-            else if (iprice) {
-                whereCondition = ` AND official_price >= ${all[i].slice(6)}`
-            }
-        }
-        else {
-            if (irate) {
-                whereCondition = whereCondition + ` AND rate_average_2dp >= ${all[i].slice(5)}`
-            }
-            else if (isell) {
-                whereCondition = whereCondition + ` AND dl_count >= ${all[i].slice(5)}`
-            }
-            else if (iprice) {
-                whereCondition = whereCondition + ` AND official_price >= ${all[i].slice(6)}`
-            }
-        }
-    }
+
+    rate.forEach(match => {
+        whereCondition = whereCondition + ` AND rate_average_2dp >= ${match[2]}`
+    })
+    sell.forEach(match => {
+        whereCondition = whereCondition + ` AND dl_count >= ${match[2]}`
+    })
+    price.forEach(match => {
+        whereCondition = whereCondition + ` AND official_price >= ${match[2]}`
+    })
     return whereCondition
-    
 }
 
 /**
