@@ -3,6 +3,21 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 8/4/2023
+
+### In `./filesystem/scanModule.js`
+1. Scanner now can scan deeper, with user's limitation depth, in the given root folders' path.
+
+### In `./filesystem/utils/getFolderList.js`
+1. Method that used to scan deeper in a specific given path.
+
+### In `./filesystem/`
+1. Combine all the util functions into a single `utils.js` file.
+
+### Database
+1. Remove `work_directory` since program doesn't use this info at all.
+2. Change `work_foldername` to `work_dir` to store work folder relative directory. 
+
 ## 8/3/2023
 
 ### In `./database/query.js`

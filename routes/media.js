@@ -2,26 +2,27 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../database/metadata')
 const config = require('../config.json')
-const { getWorkTrack, toTree, joinFragments } = require('../filesystem/utils/getTracks')
+const { getWorkTrack, toTree, joinFragments } = require('../filesystem/utils')
 const path = require('node:path');
 const jschardet = require("jschardet")
 const fs = require("fs-extra")
 
+// Endpoint /api/media
 
 router.get('/stream/:id/:hashIndex', (req, res) => {
     db('ys')
-    .select('userset_rootdir', 'work_foldername')
+    .select('userset_rootdir', 'work_dir')
     .where({rj_code: req.params.id})
     .first()
     .then(work => {
         const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
-        // console.log(path.join(rootFolder.path, work.work_foldername));
+        // console.log(path.join(rootFolder.path, work.work_dir));
         if (rootFolder) {
-            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_foldername))
+            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir))
             .then(tracks => {
                 const track = tracks[req.params.hashIndex]
 
-                const fileName = path.join(rootFolder.path, work.work_foldername, 
+                const fileName = path.join(rootFolder.path, work.work_dir, 
                     track.fileDirName || '', track.fileName);
                 
                 const extName = path.extname(fileName);
@@ -45,7 +46,7 @@ router.get('/stream/:id/:hashIndex', (req, res) => {
                 // If the folder is deeper: /media/stream/VoiceWork/second/RJ123456/subdirs/track.mp3
                 const baseUrl = config.offloadStreamPath;
                 let offloadUrl = joinFragments(baseUrl, rootFolder.name, 
-                    work.work_foldername, track.fileDirName || '', track.fileName);
+                    work.work_dir, track.fileDirName || '', track.fileName);
 
                 // Check if current process is running on Windows platform
                 if (process.platform === 'win32') {
@@ -72,7 +73,7 @@ router.get('/stream/:id/:hashIndex', (req, res) => {
 
 router.get('/download/:id/:hashindex', (req, res) => {
     db('ys')
-    .select('userset_rootdir', 'work_foldername')
+    .select('userset_rootdir', 'work_dir')
     .where({rj_code: req.params.id})
     .first()
     .then(work => {
@@ -80,7 +81,7 @@ router.get('/download/:id/:hashindex', (req, res) => {
             rootFolder.name === work.userset_rootdir);
         
         if (rootFolder) {
-            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_foldername))
+            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir))
             .then(tracks => {
                 const track = tracks[req.params.hashindex];
 
@@ -90,7 +91,7 @@ router.get('/download/:id/:hashindex', (req, res) => {
                     // If the folder is deeper: /media/download/VoiceWork/second/RJ123456/subdirs/track.mp3
                     const baseUrl = config.offloadDownloadPath;
                     let offloadUrl = joinFragments(baseUrl, rootFolder.name, 
-                        work.work_foldername, track.fileDirName || '', track.fileName);
+                        work.work_dir, track.fileDirName || '', track.fileName);
                     
                     if (process.platform === 'win32') {
                         offloadUrl = offloadUrl.replace(/\\/g, '/');
@@ -103,7 +104,7 @@ router.get('/download/:id/:hashindex', (req, res) => {
                 else {
                     // By default, serve file through express
                     const rootFolderPath = rootFolder.path
-                    const fileName = work.work_foldername
+                    const fileName = work.work_dir
                     const trackPath = track.fileDirName || ''
                     const filePath = path.join(rootFolderPath, fileName, trackPath, track.fileName)
                     if (req.headers['x-requested-with'] === 'XMLHttpRequest') {

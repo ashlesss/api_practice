@@ -1,8 +1,7 @@
-const fs = require("fs-extra")
 const md = require('../database/metadata')
-const { prcSend } = require("./utils/prcSend")
 const config = require('../config.json')
 const promiseLimit = require('promise-limit')
+const { prcSend, getFolderList } = require('./utils')
 
 const invalid = []
 
@@ -11,30 +10,13 @@ const invalid = []
  * @param {object} rootFolders Array of root folder's paths.
  * @returns work list.
  */
-const getWorkList = rootFolders => {
+async function getWorkList(rootFolders) {
     workList = []
     for (const urootFolder of rootFolders) {
-        const rootFolder = urootFolder.path
-        const userSetRootDir = urootFolder.name
-        if (fs.statSync(rootFolder).isDirectory()) {
-            const works = fs.readdirSync(rootFolder)
-            for (let i = 0; i < works.length; i++) {
-                (typeof getWorkFolderInfo(rootFolder, works[i], userSetRootDir) === 'undefined') ? '' 
-                : workList.push(getWorkFolderInfo(rootFolder, works[i],userSetRootDir))
-            }
-        }
-        else {
-            if (process.send) {
-                process.send(`${rootFolder} is not a folder.`)
-            }
-            else {
-                console.log(`${rootFolder} is not a folder.`);
-            }
-            // console.log(`${rootFolder} is not a folder.`);
-            continue
+        for await (const folder of getFolderList(urootFolder, '', 0)) {
+            workList.push(folder)
         }
     }
-    // process.send(workList)
     return workList
 }
 
@@ -91,8 +73,8 @@ const getWorkFolderInfo = (rootFolder, folderName, userSetRootDir) => {
 
 // {
 //     rjcode: 'RJ299999',
-//     rootFolder: '/mnt/hgfs/test/2/',
-//     name: 'RJ299999'
+//     name: 'RJ299999' or if the folder in deeper dicectory 'secondFolder/RJ299999',
+//     userSetRootDir: 'src'
 // },
 const uniqueList = workList => {
     let uniqueList = [];
@@ -102,7 +84,7 @@ const uniqueList = workList => {
             if (workList[i].rjcode === workList[j].rjcode) {
                 dupList.push({
                     rjcode: workList[i].rjcode,
-                    rootFolder: workList[i].rootFolder,
+                    // rootFolder: workList[i].rootFolder,
                     name: workList[i].name,
                     userSetRootDir: workList[i].userSetRootDir
                 })
@@ -138,7 +120,7 @@ const processFolder = folder => md.db('ys')
 .first()
 .then(res => {
     if (res.count === 0) {
-        return md.getWorksData(folder.rjcode, (folder.rootFolder + folder.name), folder.userSetRootDir)
+        return md.getWorksData(folder.rjcode, folder.name, folder.userSetRootDir)
         .then(result => {
             if (result === 'added') {
                 return 'added'
@@ -149,7 +131,7 @@ const processFolder = folder => md.db('ys')
         })
     }
     else {
-        md.updateWorkDir(folder.rjcode, (folder.rootFolder + folder.name), folder.userSetRootDir)
+        // md.updateWorkDir(folder.rjcode, folder.name, folder.userSetRootDir)
         return 'existed'
     }
 })
@@ -174,9 +156,10 @@ const limitedProcessFolder = folder => {
  * Perform scan on designated root folders.
  * @param {object} rootFolders Array of root folders passed from config file
  */
-const performScan = rootFolders => {
+const performScan = async rootFolders => {
     try {
-        const checkListResult = uniqueList(getWorkList(rootFolders))
+        const checkListResult = uniqueList(await getWorkList(rootFolders))
+        // const checkListResult = uniqueList(await getWorkList(rootFolders))
         const uniqueFolderList = checkListResult.uniqueList
         const dupFolderList = checkListResult.dupList
         let count = {
@@ -218,6 +201,9 @@ const performScan = rootFolders => {
         if (err.code === 'ENOENT') {
             prcSend(`Error code: "${err.code}", on path: "${err.path}". `
             + `Check the path if the path exists in your system or not.`)
+        }
+        else {
+            prcSend('Performing scan error')
         }
         process.exit(1)
     }

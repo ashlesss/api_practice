@@ -5,7 +5,7 @@ const { query } = require('express-validator');
 const { validate } = require('./utils/validateRequest')
 const config = require('../config.json')
 const { formatResult } = require('./utils/formatWorkResult')
-const { getWorkTrack, toTree } = require('../filesystem/utils/getTracks')
+const { getWorkTrack, toTree } = require('../filesystem/utils')
 const { db } = require('../database/metadata')
 const path = require('node:path');
 
@@ -138,16 +138,16 @@ router.get('/search/:keyword',
 router.get('/tracks/:id', (req, res) => {
     // console.log(req.params.id);
     db('ys')
-    .select('work_title', 'userset_rootdir', 'work_foldername')
+    .select('work_title', 'userset_rootdir', 'work_dir')
     .where('rj_code', '=', req.params.id)
     .first()
     .then(work => {
         const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
         if (rootFolder) {
-            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_foldername))
+            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir))
             .then(tracks => {
                 res.status(200).send(
-                    toTree(tracks, work.work_title, work.work_foldername, rootFolder)
+                    toTree(tracks, work.work_title, work.work_dir, rootFolder)
                 )
             })
             .catch(() => res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'}))

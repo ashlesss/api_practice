@@ -12,8 +12,19 @@ const sc = require('./scanModule')
 //         name: 'RJ299999'
 //     },
 // ]
-const rootFolders = [ '/mnt/hgfs/test/1/', '/mnt/hgfs/test/2/']
-console.log(sc.uniqueList(sc.getWorkList(rootFolders)));
+// const rootFolders = [ '/mnt/hgfs/test/1/']
+// console.log(sc.uniqueList(sc.getWorkList(rootFolders)));
+const rootFolder = [{
+    "name": "src",
+    "path": "/mnt/hgfs/test/1/"
+}]
+sc.getWorkList(rootFolder).then(res => {
+    console.log(res);
+})
+// sc.getWorkList(rootFolder).then(res => {
+//     // console.log(res);
+// })
+// sc.getWorkList(rootFolders)
 // console.log(uniqueList(list));
 
 // console.log(sc.getWorkList(rootFolders));

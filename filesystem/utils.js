@@ -1,9 +1,45 @@
-const recursiveReaddir = require('recursive-readdir')
+const fs = require("fs-extra")
 const path = require('node:path'); 
+const config = require('../config.json')
+const recursiveReaddir = require('recursive-readdir')
 const { orderBy } = require('natural-orderby');
-const config = require('../../config.json')
 const urljoin = require('url-join');
 
+async function* getFolderList(rootFolder, current = '', depth = 0 ) { 
+
+    const folders = await fs.promises.readdir(path.join(rootFolder.path, current));
+  
+    for (const folder of folders) {
+      const absolutePath = path.resolve(rootFolder.path, current, folder);
+      const relativePath = path.join(current, folder);
+
+      try {
+        if ((await fs.promises.stat(absolutePath)).isDirectory()) {
+            if (folder.match(/RJ(\d{6}|\d{8})/i)) { 
+                // Found a work folder, don't go any deeper.
+                yield {
+                    rjcode: folder.match(/RJ(\d{6}|\d{8})/i)[0],
+                    name: relativePath,
+                    userSetRootDir: rootFolder.name,
+        
+                }
+            } else if (depth + 1 < config.scannerMaxRecursionDepth) {
+                // Found a folder that's not a work folder, go inside if allowed.
+                yield* getFolderList(rootFolder, relativePath, depth + 1);
+            }
+          }
+        } catch (err) {
+            throw err
+        }
+    }
+}
+
+/**
+ * 
+ * @param {string} rjcode RJcode of the work.
+ * @param {string} dir Absolute directory of requested work
+ * @returns Work tracks array.
+ */
 const getWorkTrack = (rjcode, dir) => recursiveReaddir(dir)
     .then(files => {
         const filteredFiles = files.filter(file => {
@@ -42,6 +78,14 @@ const getWorkTrack = (rjcode, dir) => recursiveReaddir(dir)
         // console.log(sortedHashedFiles);
     })
 
+    /**
+     * 
+     * @param {object} tracks Tracks array.
+     * @param {string} workTitle Work title.
+     * @param {string} workDir Work relative directory. (work_foldername from database)
+     * @param {string} rootFolder Single rootFolder from rootFolders.
+     * @returns Array with tracks info.
+     */
 const toTree = (tracks, workTitle, workDir, rootFolder) => {
     const tree = [];
     
@@ -136,14 +180,20 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
     });
     // console.log(tree);
     return tree;
-    };
+};
 
 const encodeSplitFragments = (fragments) => {
     // On windows, replace "dir\RJ123456" => "dir/RJ123456"
     const expandedFragments = fragments.map(fragment => fragment.replace(/\\/g, '/').split('/'))
     return expandedFragments.flat().map(fragment => encodeURIComponent(fragment));
-    }
+}
 
+/**
+ * 
+ * @param {string} baseUrl Base url.
+ * @param  {...string} fragments Fragments.
+ * @returns URL without 'http://' or 'https://'
+ */
 const joinFragments = (baseUrl, ...fragments) => {
     const pattern = new RegExp(/^https?:\/\//);
     const encodedFragments = encodeSplitFragments(fragments);
@@ -155,10 +205,27 @@ const joinFragments = (baseUrl, ...fragments) => {
         // /media/stream/
         return path.join(baseUrl, ...fragments).replace(/\\/g, '/');
     }
+}
+
+/**
+ * Check if process.send() available, if available send payload 
+ * to parent. Otherwise, print payload to the console.
+ * @param {*} payload Can be object.
+ */
+const prcSend = payload => {
+    if (process.send) {
+        process.send(payload)
     }
+    else {
+        console.log(payload);
+    }
+}
+
 
 module.exports = {
+    getFolderList,
     getWorkTrack,
     toTree,
-    joinFragments
+    joinFragments,
+    prcSend
 }
