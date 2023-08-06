@@ -1,10 +1,19 @@
 //cSpell:disable
 const dbquery = require('../routes/db_query');
-const dbops = require('../routes/db_ops');
 const media = require('../routes/media')
+const auth = require('../auth/auth')
+const { routeGuard } = require('../auth/guard')
+const config = require('../config.json')
 
 module.exports = server => {
-    server.use('/api/query', dbquery);
-    server.use('/api/ops', dbops);
-    server.use('/api/media', media)
+    if (config.auth) {
+        server.use('/api/query', routeGuard, dbquery);
+        server.use('/api/media', routeGuard, media);
+        server.use('/api/auth', auth)
+    }
+    else {
+        server.use('/api/query', dbquery);
+        server.use('/api/media', media);
+        server.use('/api/auth', auth)
+    }
 }

@@ -6,6 +6,11 @@
     "worksPerPage": 12,
     "offloadMedia": false,
     "offloadStreamPath": "/media/stream/",
-	"offloadDownloadPath": "/media/download/"
-    
+	"offloadDownloadPath": "/media/download/",
+    "scannerMaxRecursionDepth": 2,
+    "issue": "<Your_domain_name>",
+    "audience": "<Your_domain_name>/api",
+    "JWTsecret": "<Your_JWT_secret>",
+    "JWTexpiration": "1w",
+    "auth": true
 }
