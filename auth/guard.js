@@ -10,37 +10,35 @@ const config = require('../config.json')
  * @param {object} next Go to next route.
  */
 function routeGuard(req, res, next) {
-    const token = req.headers.authorization
+    const token = req.headers.authorization 
+        && req.headers.authorization.split(' ')[1];
     const secret = config.JWTsecret
 
     if (token) {
-        if(token.startsWith('Bearer ')) {
-            const cToken = token.split(' ')[1]
-            jwt.verify(cToken, secret, (err, decodedToken) => {
-                if (err) {
-                    res.status(401).json({
-                        error: 'invalid token'
-                    })
-                }
-                else {
-                    req.decodedToken = decodedToken
-                    next()
-                }
-            })
-        }
-        else {
-            jwt.verify(token, secret, (err, decodedToken) => {
-                if (err) {
-                    res.status(401).json({
-                        error: 'invalid token'
-                    })
-                }
-                else {
-                    req.decodedToken = decodedToken
-                    next()
-                }
-            })
-        }
+        jwt.verify(token, secret, (err, decodedToken) => {
+            if (err) {
+                res.status(401).json({
+                    error: 'invalid token'
+                })
+            }
+            else {
+                req.decodedToken = decodedToken
+                next()
+            }
+        })
+    }
+    else if (req.query && req.query.token) {
+        jwt.verify(req.query.token, secret, (err, decodedToken) => {
+            if (err) {
+                res.status(401).json({
+                    error: 'invalid token'
+                })
+            }
+            else {
+                req.decodedToken = decodedToken
+                next()
+            }
+        })
     }
     else {
         res.status(401).json({

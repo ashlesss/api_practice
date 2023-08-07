@@ -42,6 +42,25 @@ const getTokenInfo = (req, res, isAuth) => {
             }
         })
     }
+    else if (req.query && req.query.token) {
+        jwt.verify(req.query.token, secret, (err, decodedToken) => {
+            if (err) {
+                res.status(401).json({
+                    error: 'Invalid token',
+                    auth: isAuth
+                })
+            }
+            else {
+                req.decodedToken = decodedToken
+                res.status(200).json({
+                    user: {
+                        name: `${decodedToken.user}`,
+                    },
+                    auth: isAuth
+                })
+            }
+        })
+    }
     else {
         res.status(401).json({
             error: 'No token received',

@@ -3,6 +3,11 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 8/7/2023
+
+### JWT auth
+1. Add a verification on request query token value. If user send JWT token through URL.
+
 ## 8/5/2023
 
 ### Login services
