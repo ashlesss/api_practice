@@ -1,9 +1,10 @@
 //cSpell:disable
+const { config } = require('../config')
 const knex = require('knex')
-const config = require('../knexfile')
-const db = knex(config.development)
+const dbEnv = config.production ? 'production' : 'development'
+const Config = require('../knexfile')[dbEnv]
+const db = knex(Config)
 const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
-const path = require('node:path');
 
 /**
  * This method will not check for the duplicate rjcode.

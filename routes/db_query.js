@@ -3,7 +3,7 @@ const ysdb = require('../database/query');
 const router = express.Router();
 const { query } = require('express-validator');
 const { validate } = require('./utils/validateRequest')
-const config = require('../config.json')
+const { config } = require('../config')
 const { formatResult } = require('./utils/formatWorkResult')
 const { getWorkTrack, toTree } = require('../filesystem/utils')
 const { db } = require('../database/metadata')
@@ -153,10 +153,11 @@ router.get('/tracks/:id', (req, res) => {
             .catch(() => res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'}))
         }
         else {
-            res.status(500).send({error: `Folder not found: "${work.userset_rootdir}", Try restart server or rescan.`})
+            res.status(500).send({error: `Folder not found, Try restart server or rescan.`})
         }
     })
     .catch(err => {
+        console.error(err);
         res.status(500).send({error: 'Querying database failed', message: err})
     })
 })

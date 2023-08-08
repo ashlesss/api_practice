@@ -3,6 +3,18 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 8/8/2023
+
+### Config file
+1. Config file will now be created when the app starts if it doesn't exist.
+
+### Database 
+1. Database is now will be initialized at the start of the app if it doesn't exist, an admin user will be created upon database creation.
+2. Schema is now managed by js file, no longer managed through migration file. Migration file is now only for migrate database data and test adding new data features.
+
+### Scraper
+1. Fix unformatted directory causing work's cover stored to different directory instead the directory in the config file.
+
 ## 8/7/2023
 
 ### JWT auth

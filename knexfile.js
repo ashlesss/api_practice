@@ -1,5 +1,6 @@
 // Update with your config settings.
-const config = require('./config.json')
+const { config } = require('./config')
+const path = require('node:path');
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
@@ -9,9 +10,12 @@ module.exports = {
   development: {
     client: 'sqlite3',
     connection: {
-      filename: config.db_path
+      filename: path.join(config.db_path, 'ys.sqlite3'),
     },
     useNullAsDefault: true,
+    migrations: {
+      tableName: 'knex_migrations',
+    }
   },
 
   // staging: {

@@ -1,7 +1,8 @@
 //cSpell:disable
 const axios = require('axios');
 const fs = require("fs-extra");
-const config = require('../config.json')
+const { config } = require('../config')
+const path = require('node:path');
 
 /**
  * 
@@ -169,8 +170,8 @@ const scGetImg = (rjcode, folderRjcode) => new Promise((resolve, reject) => {
     }
 
     imgPath = config.img_folder
-
-    if (fs.existsSync(`${imgPath}${rjcode}_img_main.jpg`)) {
+    // `${imgPath}${rjcode}_img_main.jpg`
+    if (fs.existsSync(path.join(imgPath, `${rjcode}_img_main.jpg`))) {
         // console.log(`${rjcode}_img_main.jpg already exists`);
         resolve({
             main_img: `${rjcode}_img_main.jpg`
@@ -184,7 +185,8 @@ const scGetImg = (rjcode, folderRjcode) => new Promise((resolve, reject) => {
         })
         .then(res => {
             if (folderRjcode) {
-                res.data.pipe(fs.createWriteStream(`${imgPath}${folderRjcode}_img_main.jpg`));
+                // `${imgPath}${folderRjcode}_img_main.jpg`
+                res.data.pipe(fs.createWriteStream(path.join(imgPath, `${rjcode}_img_main.jpg`)));
                 res.data.on('end', () => {
                     console.log(`${folderRjcode}_img_main.jpg download completed.`);
                     resolve({
@@ -193,7 +195,7 @@ const scGetImg = (rjcode, folderRjcode) => new Promise((resolve, reject) => {
                 })
             }
             else {
-                res.data.pipe(fs.createWriteStream(`${imgPath}${rjcode}_img_main.jpg`));
+                res.data.pipe(fs.createWriteStream(path.join(imgPath, `${rjcode}_img_main.jpg`)));
                 res.data.on('end', () => {
                     console.log(`${rjcode}_img_main.jpg download completed.`);
                     resolve({

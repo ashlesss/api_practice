@@ -7,6 +7,7 @@ exports.up = function(knex) {
     tbl.increments('userId').primary()
     tbl.text('username', 128).notNullable().unique().index()
     tbl.text('password', 255).notNullable()
+    tbl.text('group').notNullable()
   })
 };
 

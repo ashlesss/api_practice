@@ -12,5 +12,6 @@
     "audience": "<Your_domain_name>/api",
     "JWTsecret": "<Your_JWT_secret>",
     "JWTexpiration": "1w",
-    "auth": true
+    "auth": true,
+    "production": false
 }

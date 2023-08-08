@@ -1,8 +1,5 @@
-const knex = require('knex')
-const config = require('../knexfile')
-const db = knex(config.development)
-const Config = require('../config.json')
-const e = require('express')
+const { db } = require('./metadata')
+const { config } = require('../config')
 
 module.exports = {
     getFullRecord,
@@ -32,7 +29,7 @@ function getFullRecord(work) {
  * @returns Object with pagination and works.
  */
 async function getWorks(page, order, sort, subtitle) {
-    const worksPerPage = Config.worksPerPage;
+    const worksPerPage = config.worksPerPage;
     const sortSub = sortBySubtitle(subtitle, 0)
     const orderQuery = randomOrder(order)
 

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const config = require('../config.json')
+const { config } = require('../config')
 
 /**
  * This function will check for user's JWT token, if the token is valid,

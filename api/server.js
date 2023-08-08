@@ -3,7 +3,7 @@ const dbquery = require('../routes/db_query');
 const media = require('../routes/media')
 const auth = require('../auth/auth')
 const { routeGuard } = require('../auth/guard')
-const config = require('../config.json')
+const { config } = require('../config')
 
 module.exports = server => {
     if (config.auth) {

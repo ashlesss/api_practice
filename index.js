@@ -10,6 +10,12 @@ const io = require('socket.io')(http, {
     }
 });
 const child_process = require('child_process')
+const { config } = require('./config')
+const { initApp } = require('./database/init')
+require('dotenv').config()
+
+// Init database and config file
+initApp()
 
 io.on("connection", socket => {
     console.log('Socket connection established');

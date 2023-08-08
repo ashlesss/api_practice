@@ -1,6 +1,6 @@
 const fs = require("fs-extra")
 const path = require('node:path'); 
-const config = require('../config.json')
+const { config } = require('../config')
 const recursiveReaddir = require('recursive-readdir')
 const { orderBy } = require('natural-orderby');
 const urljoin = require('url-join');

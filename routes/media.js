@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../database/metadata')
-const config = require('../config.json')
+const { config } = require('../config')
 const { getWorkTrack, toTree, joinFragments } = require('../filesystem/utils')
 const path = require('node:path');
 const jschardet = require("jschardet")
@@ -68,6 +68,10 @@ router.get('/stream/:id/:hashIndex', (req, res) => {
             res.status(500).send({error: `Failed to find folder: ` 
             + `"${work.userset_rootdir}", restart the server or rescan.`});
         }
+    })
+    .catch(err => {
+        console.error(err)
+        res.status(500).json({ error: 'Check server log for more info'})
     })
 })
 

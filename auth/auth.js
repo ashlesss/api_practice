@@ -5,7 +5,7 @@ const { check } = require('express-validator');
 const { addUser } = require('../database/users')
 const { validate } = require('../routes/utils/validateRequest')
 const { signToken, getTokenInfo } = require('./utils');
-const config = require('../config.json')
+const { config } = require('../config')
 
 router.post('/register', [
     check('username', 'Username contains illegal characters or is out of length(5-15 characters).')

@@ -1,5 +1,5 @@
 const md = require('../database/metadata')
-const config = require('../config.json')
+const { config } = require('../config')
 const promiseLimit = require('promise-limit')
 const { prcSend, getFolderList } = require('./utils')
 
