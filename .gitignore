@@ -11,3 +11,5 @@ out*.txt
 config.json
 
 filesystem/utils/getTracksTest.js
+
+appDatabase/
