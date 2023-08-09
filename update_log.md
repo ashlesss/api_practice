@@ -3,6 +3,20 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 8/9/2023
+
+### Config file modification
+1. Config file now can be modified through front-end by authorized users.
+
+### Config route
+1. Create config route to accept front-end config file modification.
+
+### Database
+1. Add `group` column to store user group. 
+
+### JWT token
+1. Add user `group` to the payload of JWT token to identify what groups the user belongs to.
+
 ## 8/8/2023
 
 ### Config file

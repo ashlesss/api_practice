@@ -31,10 +31,34 @@ const defaultConfig = {
     production: process.env.NODE_ENV === 'production' ? true : false,
 }
 
+/**
+ * 
+ * @param {boolean} writeConfigToFile Is allow to write config file to disk?
+ * Default controlled by process.env.FREEZE_CONFIG_FILE.
+ */
 function initConfig(writeConfigToFile = !process.env.FREEZE_CONFIG_FILE) {
     config = Object.assign(config, defaultConfig);
     if (writeConfigToFile) {
         fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, "\t"));
+    }
+}
+
+/**
+ * 
+ * @param {object} newConfig New config object.
+ * @param {boolean} writeConfigToFile Is allow to write config file to disk?
+ * Default controlled by process.env.FREEZE_CONFIG_FILE.
+ */
+function setConfig(newConfig, writeConfigToFile = !process.env.FREEZE_CONFIG_FILE) {
+    newConfig.production = config.production
+    if (process.env.NODE_ENV === 'production' || config.production) {
+        newConfig.auth = true
+    }
+    newConfig.JWTsecret = config.JWTsecret
+
+    config = Object.assign(config, newConfig)
+    if (writeConfigToFile) {
+        fs.writeFileSync(configPath, JSON.stringify(config, null, "\t"))
     }
 }
 
@@ -47,5 +71,6 @@ else {
 
 module.exports = {
     initConfig,
-    config
+    config,
+    setConfig
 }

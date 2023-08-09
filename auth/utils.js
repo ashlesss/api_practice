@@ -11,13 +11,20 @@ const signToken = user => {
     const expiration = config.JWTexpiration
     
     const payload = {
-        user: user,
+        user: user.username,
+        group: user.group,
         iss: config.issue,
         aud: config.audience
     }
     return jwt.sign(payload, secret, {expiresIn: expiration})
 }
 
+/**
+ * 
+ * @param {object} req Request body.
+ * @param {object} res Response body.
+ * @param {boolean} isAuth Is authentication enable?
+ */
 const getTokenInfo = (req, res, isAuth) => {
     const token = req.headers.authorization 
         && req.headers.authorization.split(' ')[1];
@@ -35,7 +42,8 @@ const getTokenInfo = (req, res, isAuth) => {
                 req.decodedToken = decodedToken
                 res.status(200).json({
                     user: {
-                        name: `${decodedToken.user}`,
+                        name: decodedToken.user,
+                        group: decodedToken.group
                     },
                     auth: isAuth
                 })
@@ -54,7 +62,8 @@ const getTokenInfo = (req, res, isAuth) => {
                 req.decodedToken = decodedToken
                 res.status(200).json({
                     user: {
-                        name: `${decodedToken.user}`,
+                        name: decodedToken.user,
+                        group: decodedToken.group
                     },
                     auth: isAuth
                 })

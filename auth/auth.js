@@ -58,7 +58,7 @@ router.post('/me', [
                 res.status(401).json({ error: 'Wrong username or password.'})
             }
             else {
-                const token = signToken(user.username)
+                const token = signToken(user)
                 res.send({ token })
                 // res.status(200).json({ info: 'login approved.'})
             }
@@ -77,7 +77,8 @@ router.get('/me', (req, res) => {
         else {
             res.status(200).json({
                 user: {
-                    name: "admin"
+                    name: "admin",
+                    group: 'admin'
                 },
                 auth: config.auth
             })
