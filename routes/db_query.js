@@ -150,7 +150,9 @@ router.get('/tracks/:id', (req, res) => {
                     toTree(tracks, work.work_title, work.work_dir, rootFolder)
                 )
             })
-            .catch(() => res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'}))
+            .catch(() => {
+                res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'})
+            })
         }
         else {
             res.status(500).send({error: `Folder not found, Try restart server or rescan.`})

@@ -22,6 +22,8 @@
     "jschardet": "^3.0.0",
     "jsonwebtoken": "^9.0.1",
     "knex": "^2.4.2",
+    "lrc-parser": "^1.0.1",
+    "music-metadata": "^7.13.4",
     "natural-orderby": "^3.0.2",
     "nodemon": "^2.0.22",
     "pkg": "^5.8.1",
@@ -29,6 +31,9 @@
     "recursive-readdir": "^2.2.3",
     "socket.io": "^4.7.1",
     "sqlite3": "^5.1.6",
-    "url-join": "^4.0.1"
+    "subsrt": "^1.1.1",
+    "subtitles-parser-vtt": "^0.1.0",
+    "url-join": "^4.0.1",
+    "webvtt-parser": "^2.2.0"
   }
 }

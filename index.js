@@ -11,7 +11,8 @@ const io = require('socket.io')(http, {
 });
 const child_process = require('child_process')
 const { config } = require('./config')
-const { initApp } = require('./database/init')
+const { initApp } = require('./database/init');
+const e = require('express');
 require('dotenv').config()
 
 // Init database and config file

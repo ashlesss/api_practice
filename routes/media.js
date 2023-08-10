@@ -6,6 +6,8 @@ const { getWorkTrack, toTree, joinFragments } = require('../filesystem/utils')
 const path = require('node:path');
 const jschardet = require("jschardet")
 const fs = require("fs-extra")
+const { check } = require('express-validator');
+const { validate } = require('../routes/utils/validateRequest')
 
 // Endpoint /api/media
 
@@ -134,6 +136,59 @@ router.get('/download/:id/:hashindex', (req, res) => {
             + 'Check your input values or restart server or rescan.',
             errorMsg: err
         })
+    })
+})
+
+router.get('/check-subtitle/:id/:hashindex', [
+    check('id').matches(/RJ\d{6,8}|rj\d{6,8}/)
+        .withMessage('Illegal work ID'),
+    check('hashindex').isInt()
+        .withMessage('Illegal hash index')
+],
+(req, res) => {
+    if (!validate(req, res)) return 
+
+    db('ys')
+    .select('userset_rootdir', 'work_dir')
+    .where({rj_code: req.params.id})
+    .first()
+    .then(work => {
+        const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
+        if (rootFolder) {
+            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir))
+            .then(tracks => {
+                // console.log(req.params.hashindex);
+                const track = tracks[req.params.hashindex]
+                const fileLoc = path.join(rootFolder.path, work.work_dir, track.fileDirName || '', track.fileName)
+                const lrcFileLoc = fileLoc.substring(0, fileLoc.lastIndexOf('.')) + '.lrc';
+                // console.log(lrcFileLoc);
+
+                if (!fs.existsSync(lrcFileLoc)) {
+                    res.send({result: false, message:'Lrc not exists', hash: ''});
+                }
+                else {
+                    const lrcFileName = track.fileName.substring(0, track.fileName.lastIndexOf(".")) + ".lrc";
+                    const subtitleToFind = track.fileDirName;
+                    tracks.forEach(trackItem => {
+                        if (trackItem.fileName === lrcFileName && subtitleToFind === trackItem.fileDirName) {
+                            res.send({result: true, message:'Found Lrc file', hash: trackItem.hash})
+                        }
+                    })
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                res.status(500).json(err)
+            })
+        }
+        else {
+            res.status(500).json({
+                error: 'Can\'t find folder'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).json(err)
     })
 })
 

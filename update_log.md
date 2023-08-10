@@ -3,6 +3,14 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 8/10/2023
+
+### Audio files' length/duration
+1. Get audio files' duration and add duration to the track information.
+
+### `lrc` file
+1. Get `lrc` file if that file in the same directory with audio.
+
 ## 8/9/2023
 
 ### Config file modification
