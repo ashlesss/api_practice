@@ -4,6 +4,11 @@ const { config } = require('../config')
 const recursiveReaddir = require('recursive-readdir')
 const { orderBy } = require('natural-orderby');
 const urljoin = require('url-join');
+const mm = require('music-metadata');
+const { WebVTTParser } = require('webvtt-parser');
+const vttParser = require('subtitles-parser-vtt');
+const subsrt = require('subsrt');
+const lrcParser = require('lrc-parser')
 
 async function* getFolderList(rootFolder, current = '', depth = 0 ) { 
 
@@ -51,41 +56,118 @@ const getWorkTrack = (rjcode, dir) => recursiveReaddir(dir)
             || ext === '.pdf'
             || ext === '.jpg' || ext === '.jpeg' || ext === '.png' || ext === '.webp');
         })
-        // console.log(fileredFiles);
+        // console.log(filteredFiles);
         // console.log(files);
-        const sortedFiles = orderBy(filteredFiles.map((file) => {
+
+
+        const unSortedFilesPromises = filteredFiles.map(async file => {
             const shortFilePath = file.replace(path.join(dir, '/'), '');
             const dirName = path.dirname(shortFilePath);
             // console.log(shortFilePath);
-      
-            return {
-              fileName: path.basename(file),
-              fileDirName: dirName === '.' ? null : dirName,
-              ext: path.extname(file),
-            };
-          }), [v => v.fileDirName, v => v.fileName, v => v.ext]);
-        //   console.log(sortedFiles);
-
-          const sortedHashedFiles = sortedFiles.map(
-            (sfile, index) => ({
-              fileName: sfile.fileName,
-              fileDirName: sfile.fileDirName,
-              hash: `${rjcode}/${index}`,
-              ext: sfile.ext,
-            }),
-          );
-          return sortedHashedFiles;
-        // console.log(sortedHashedFiles);
+            if (path.extname(file) === '.mp3'
+            || path.extname(file) === '.wav'
+            || path.extname(file) === '.ogg'
+            || path.extname(file) === '.opus'
+            || path.extname(file) === '.aac'
+            || path.extname(file) === '.flac'
+            || path.extname(file) === '.webm'
+            || path.extname(file) === '.m4a') {
+                const metadata = await mm.parseFile(file);
+                const duration = metadata.format.duration
+                return {
+                    fileName: path.basename(file),
+                    fileDirName: dirName === '.' ? null : dirName,
+                    ext: path.extname(file),
+                    duration: duration
+                };
+            }
+            else if (path.extname(file) === '.lrc') {
+                const lrcDuration = getLrcDuration(file)
+                return {
+                    fileName: path.basename(file),
+                    fileDirName: dirName === '.' ? null : dirName,
+                    ext: path.extname(file),
+                    duration: lrcDuration
+                }
+            }
+            else if (path.extname(file) === '.srt') {
+                const srtDuration = getSrtDuration(file)
+                return {
+                    fileName: path.basename(file),
+                    fileDirName: dirName === '.' ? null : dirName,
+                    ext: path.extname(file),
+                    duration: srtDuration
+                }
+            }
+            else if (path.extname(file) === '.ass') {
+                const assDuration = getAssDuration(file)
+                return {
+                    fileName: path.basename(file),
+                    fileDirName: dirName === '.' ? null : dirName,
+                    ext: path.extname(file),
+                    duration: assDuration
+                }
+            }
+            else if (path.extname(file) === '.vtt') {
+                const vttDuration = getVttDuration(file)
+                return {
+                    fileName: path.basename(file),
+                    fileDirName: dirName === '.' ? null : dirName,
+                    ext: path.extname(file),
+                    duration: vttDuration
+                }
+            }
+            else {
+                return {
+                    fileName: path.basename(file),
+                    fileDirName: dirName === '.' ? null : dirName,
+                    ext: path.extname(file),
+                };
+            }
+        })
+    
+        return Promise.all(unSortedFilesPromises)
+        .then(unSortedFiles => {
+            const sortedFiles = orderBy(
+                unSortedFiles, [v => v.fileDirName, v => v.fileName, v => v.ext]
+            )
+    
+            const sortedFilesHash = sortedFiles.map((sfile, index) => {
+                if (sfile.duration || sfile.duration >= 0) {
+                    return {
+                        fileName: sfile.fileName,
+                        fileDirName: sfile.fileDirName,
+                        hash: `${rjcode}/${index}`,
+                        ext: sfile.ext,
+                        duration: sfile.duration
+                    }
+                }
+                else {
+                    return {
+                        fileName: sfile.fileName,
+                        fileDirName: sfile.fileDirName,
+                        hash: `${rjcode}/${index}`,
+                        ext: sfile.ext,
+                    }
+                }
+            })
+    
+            // console.log(sortedFilesHash);
+            return sortedFilesHash
+        })
+        .catch(err => {
+            console.error(err)
+        })
     })
 
-    /**
-     * 
-     * @param {object} tracks Tracks array.
-     * @param {string} workTitle Work title.
-     * @param {string} workDir Work relative directory. (work_foldername from database)
-     * @param {string} rootFolder Single rootFolder from rootFolders.
-     * @returns Array with tracks info.
-     */
+/**
+ * 
+ * @param {object} tracks Tracks array.
+ * @param {string} workTitle Work title.
+ * @param {string} workDir Work relative directory. (work_foldername from database)
+ * @param {string} rootFolder Single rootFolder from rootFolders.
+ * @returns Array with tracks info.
+ */
 const toTree = (tracks, workTitle, workDir, rootFolder) => {
     const tree = [];
     
@@ -140,14 +222,27 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         const mediaDownloadUrl = config.offloadMedia ? offloadDownloadUrl : mediaDownloadBaseUrl + track.hash;
     
         if (track.ext === '.txt' || track.ext === '.lrc' || track.ext === '.srt' || track.ext === '.ass') { 
-            fatherFolder.push({
-                type: 'text',
-                hash: track.hash,
-                title: track.fileName,
-                workTitle,
-                mediaStreamUrl: textStreamBaseUrl,
-                mediaDownloadUrl: textDownloadBaseUrl
-            });
+            if (track.ext !== '.txt') {
+                fatherFolder.push({
+                    type: 'text',
+                    hash: track.hash,
+                    title: track.fileName,
+                    workTitle,
+                    mediaStreamUrl: textStreamBaseUrl,
+                    mediaDownloadUrl: textDownloadBaseUrl,
+                    duration: track.duration
+                });
+            }
+            else {
+                fatherFolder.push({
+                    type: 'text',
+                    hash: track.hash,
+                    title: track.fileName,
+                    workTitle,
+                    mediaStreamUrl: textStreamBaseUrl,
+                    mediaDownloadUrl: textDownloadBaseUrl
+                });
+            }
         } else if (track.ext === '.jpg' || track.ext === '.jpeg' || track.ext === '.png' || track.ext === '.webp' ) {
             fatherFolder.push({
                 type: 'image',
@@ -168,14 +263,27 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
             });
         }
         else {
-            fatherFolder.push({
-                type: 'audio',
-                hash: track.hash,
-                title: track.fileName,
-                workTitle,
-                mediaStreamUrl,
-                mediaDownloadUrl
-            });
+            if (track.duration) {
+                fatherFolder.push({
+                    type: 'audio',
+                    hash: track.hash,
+                    title: track.fileName,
+                    workTitle,
+                    mediaStreamUrl,
+                    mediaDownloadUrl,
+                    duration: track.duration
+                });
+            }
+            else {
+                fatherFolder.push({
+                    type: 'audio',
+                    hash: track.hash,
+                    title: track.fileName,
+                    workTitle,
+                    mediaStreamUrl,
+                    mediaDownloadUrl,
+                });
+            }
         }
     });
     // console.log(tree);
@@ -221,6 +329,89 @@ const prcSend = payload => {
     }
 }
 
+function getLrcDuration(lrcPath) {
+    try {
+        const content = fs.readFileSync(lrcPath, 'utf-8');
+        const data = lrcParser(content)
+        if (data.scripts.length === 0) {
+            return 'noContent'
+        }
+        else {
+            const endTime = data.scripts[data.scripts.length - 1].end
+            return endTime
+        }
+    }
+    catch (err) {
+        console.error(err)
+        return 0
+    }
+    
+}
+
+function getVttDuration(VttPath) {
+    try {
+        const content = fs.readFileSync(VttPath, 'utf-8')
+        const parser = new WebVTTParser ();
+        const parsed = parser.parse(content);
+        if (parsed.cues.length === 0) {
+            return 'noContent'
+        }
+        else {
+            return parsed.cues[parsed.cues.length - 1].endTime
+        }
+    }
+    catch (err) {
+        console.error(err)
+        return 0
+    }
+}
+
+function getSrtDuration(srtPath) {
+    try {
+        const content = fs.readFileSync(srtPath, 'utf-8')
+        const parsed = vttParser.fromVtt(content);
+        if (parsed.length === 0) {
+            return 'noContent'
+        }
+        else {
+            const endTime = parsed[parsed.length - 1].endTime
+            return timestampToSeconds(endTime)
+        }
+    }
+    catch(err) {
+        console.error(err)
+        return 0
+    }
+}
+
+function timestampToSeconds(timestamp) {
+    const [hour, minute, rest] = timestamp.split(':');
+    const [second, millisecond] = rest.split(',');
+
+    return parseInt(hour) * 3600 + 
+           parseInt(minute) * 60 + 
+           parseInt(second) + 
+           parseInt(millisecond) / 1000;
+}
+
+function getAssDuration(assPath) {
+    try {
+        const content = fs.readFileSync(assPath, 'utf-8');
+        const parsed = subsrt.parse(content, { format: 'ass' });
+        const caption = parsed.filter(sub => sub.type === 'caption')
+        if (caption.length === 0) {
+            return 'noContent'
+        }
+        else {
+            const endTime = caption[caption.length - 1].end
+            return endTime / 1000
+        }
+    }
+    catch (err) {
+        console.error(err)
+        return 0
+    }
+}
 
 module.exports = {
     getFolderList,
