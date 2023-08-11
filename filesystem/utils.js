@@ -8,7 +8,6 @@ const mm = require('music-metadata');
 const { WebVTTParser } = require('webvtt-parser');
 const vttParser = require('subtitles-parser-vtt');
 const subsrt = require('subsrt');
-const lrcParser = require('lrc-parser')
 
 async function* getFolderList(rootFolder, current = '', depth = 0 ) { 
 
@@ -156,7 +155,7 @@ const getWorkTrack = (rjcode, dir) => recursiveReaddir(dir)
             return sortedFilesHash
         })
         .catch(err => {
-            console.error(err)
+            console.error('promise', err)
         })
     })
 
@@ -332,13 +331,22 @@ const prcSend = payload => {
 function getLrcDuration(lrcPath) {
     try {
         const content = fs.readFileSync(lrcPath, 'utf-8');
-        const data = lrcParser(content)
-        if (data.scripts.length === 0) {
+        const captions = subsrt.parse(content, { format: 'lrc'});
+        if (captions.length === 0) {
             return 'noContent'
         }
         else {
-            const endTime = data.scripts[data.scripts.length - 1].end
-            return endTime
+            const data = captions.filter(caption => {
+                if (caption.type === 'caption') {
+                    return caption
+                }
+            })
+            if (data.length === 0) {
+                return 'noContent'
+            }
+            else {
+                return (data[data.length - 1].end) / 1000
+            }
         }
     }
     catch (err) {

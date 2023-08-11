@@ -22,7 +22,6 @@
     "jschardet": "^3.0.0",
     "jsonwebtoken": "^9.0.1",
     "knex": "^2.4.2",
-    "lrc-parser": "^1.0.1",
     "music-metadata": "^7.13.4",
     "natural-orderby": "^3.0.2",
     "nodemon": "^2.0.22",
