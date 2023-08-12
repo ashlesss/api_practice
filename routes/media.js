@@ -20,7 +20,7 @@ router.get('/stream/:id/:hashIndex', (req, res) => {
         const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
         // console.log(path.join(rootFolder.path, work.work_dir));
         if (rootFolder) {
-            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir))
+            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir), false)
             .then(tracks => {
                 const track = tracks[req.params.hashIndex]
 
@@ -87,7 +87,7 @@ router.get('/download/:id/:hashindex', (req, res) => {
             rootFolder.name === work.userset_rootdir);
         
         if (rootFolder) {
-            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir))
+            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir), false)
             .then(tracks => {
                 const track = tracks[req.params.hashindex];
 

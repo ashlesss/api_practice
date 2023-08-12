@@ -12,8 +12,10 @@ const io = require('socket.io')(http, {
 const child_process = require('child_process')
 const { config } = require('./config')
 const { initApp } = require('./database/init');
-const e = require('express');
 require('dotenv').config()
+const morgan = require('morgan')
+const fs = require("fs-extra")
+const path = require('node:path');
 
 // Init database and config file
 initApp()
@@ -45,6 +47,15 @@ io.on("connection", socket => {
 server.use(cors())
 server.use(express.json())
 
+if (process.env.NODE_ENV === 'development') {
+    if (fs.existsSync(path.join(__dirname, 'access.log'))) {
+        fs.unlinkSync(path.join(__dirname, 'access.log'))
+    }
+    const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' });
+    server.use(morgan('combined', { stream: accessLogStream }))
+}
+
+
 // Expose api
 api(server)
 
@@ -53,5 +64,5 @@ api(server)
 server.use('/api/static', express.static('static'))
 
 http.listen(PORT, () => {
-    console.log(`\n server running on port ${PORT} \n`)
+    console.log(`\n httpServer running on port ${PORT} \n`)
 });

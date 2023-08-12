@@ -3,6 +3,14 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 8/11/2023
+
+### Audio files' length/duration
+1. Add a switch on `/download/` and `/stream/` api endpoint where front-end doesn't depend on these endpoint to get audio and subtitle's durations. And optimize server load.
+
+### Http request log
+1. Add http request logger `morgan`.
+
 ## 8/10/2023
 
 ### Audio files' length/duration

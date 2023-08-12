@@ -13,3 +13,7 @@ config.json
 filesystem/utils/getTracksTest.js
 
 appDatabase/
+
+access.log
+
+cover.js

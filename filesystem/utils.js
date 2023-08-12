@@ -42,9 +42,10 @@ async function* getFolderList(rootFolder, current = '', depth = 0 ) {
  * 
  * @param {string} rjcode RJcode of the work.
  * @param {string} dir Absolute directory of requested work
+ * @param {boolean} durationEnable Get audio and subtitle files duration switch. Default to true when no input.
  * @returns Work tracks array.
  */
-const getWorkTrack = (rjcode, dir) => recursiveReaddir(dir)
+const getWorkTrack = (rjcode, dir, durationEnable = true) => recursiveReaddir(dir)
     .then(files => {
         const filteredFiles = files.filter(file => {
             const ext = path.extname(file).toLowerCase()
@@ -58,105 +59,129 @@ const getWorkTrack = (rjcode, dir) => recursiveReaddir(dir)
         // console.log(filteredFiles);
         // console.log(files);
 
-
-        const unSortedFilesPromises = filteredFiles.map(async file => {
-            const shortFilePath = file.replace(path.join(dir, '/'), '');
-            const dirName = path.dirname(shortFilePath);
-            // console.log(shortFilePath);
-            if (path.extname(file) === '.mp3'
-            || path.extname(file) === '.wav'
-            || path.extname(file) === '.ogg'
-            || path.extname(file) === '.opus'
-            || path.extname(file) === '.aac'
-            || path.extname(file) === '.flac'
-            || path.extname(file) === '.webm'
-            || path.extname(file) === '.m4a') {
-                const metadata = await mm.parseFile(file);
-                const duration = metadata.format.duration
-                return {
-                    fileName: path.basename(file),
-                    fileDirName: dirName === '.' ? null : dirName,
-                    ext: path.extname(file),
-                    duration: duration
-                };
-            }
-            else if (path.extname(file) === '.lrc') {
-                const lrcDuration = getLrcDuration(file)
-                return {
-                    fileName: path.basename(file),
-                    fileDirName: dirName === '.' ? null : dirName,
-                    ext: path.extname(file),
-                    duration: lrcDuration
-                }
-            }
-            else if (path.extname(file) === '.srt') {
-                const srtDuration = getSrtDuration(file)
-                return {
-                    fileName: path.basename(file),
-                    fileDirName: dirName === '.' ? null : dirName,
-                    ext: path.extname(file),
-                    duration: srtDuration
-                }
-            }
-            else if (path.extname(file) === '.ass') {
-                const assDuration = getAssDuration(file)
-                return {
-                    fileName: path.basename(file),
-                    fileDirName: dirName === '.' ? null : dirName,
-                    ext: path.extname(file),
-                    duration: assDuration
-                }
-            }
-            else if (path.extname(file) === '.vtt') {
-                const vttDuration = getVttDuration(file)
-                return {
-                    fileName: path.basename(file),
-                    fileDirName: dirName === '.' ? null : dirName,
-                    ext: path.extname(file),
-                    duration: vttDuration
-                }
-            }
-            else {
-                return {
-                    fileName: path.basename(file),
-                    fileDirName: dirName === '.' ? null : dirName,
-                    ext: path.extname(file),
-                };
-            }
-        })
-    
-        return Promise.all(unSortedFilesPromises)
-        .then(unSortedFiles => {
-            const sortedFiles = orderBy(
-                unSortedFiles, [v => v.fileDirName, v => v.fileName, v => v.ext]
-            )
-    
-            const sortedFilesHash = sortedFiles.map((sfile, index) => {
-                if (sfile.duration || sfile.duration >= 0) {
+        if (durationEnable) {
+            const unSortedFilesPromises = filteredFiles.map(async file => {
+                const shortFilePath = file.replace(path.join(dir, '/'), '');
+                const dirName = path.dirname(shortFilePath);
+                // console.log(shortFilePath);
+                if (path.extname(file) === '.mp3'
+                || path.extname(file) === '.wav'
+                || path.extname(file) === '.ogg'
+                || path.extname(file) === '.opus'
+                || path.extname(file) === '.aac'
+                || path.extname(file) === '.flac'
+                || path.extname(file) === '.webm'
+                || path.extname(file) === '.m4a') {
+                    const metadata = await mm.parseFile(file);
+                    const duration = metadata.format.duration
                     return {
-                        fileName: sfile.fileName,
-                        fileDirName: sfile.fileDirName,
-                        hash: `${rjcode}/${index}`,
-                        ext: sfile.ext,
-                        duration: sfile.duration
+                        fileName: path.basename(file),
+                        fileDirName: dirName === '.' ? null : dirName,
+                        ext: path.extname(file),
+                        duration: duration
+                    };
+                }
+                else if (path.extname(file) === '.lrc') {
+                    const lrcDuration = await getLrcDuration(file)
+                    return {
+                        fileName: path.basename(file),
+                        fileDirName: dirName === '.' ? null : dirName,
+                        ext: path.extname(file),
+                        duration: lrcDuration
+                    }
+                }
+                else if (path.extname(file) === '.srt') {
+                    const srtDuration = await getSrtDuration(file)
+                    return {
+                        fileName: path.basename(file),
+                        fileDirName: dirName === '.' ? null : dirName,
+                        ext: path.extname(file),
+                        duration: srtDuration
+                    }
+                }
+                else if (path.extname(file) === '.ass') {
+                    const assDuration = await getAssDuration(file)
+                    return {
+                        fileName: path.basename(file),
+                        fileDirName: dirName === '.' ? null : dirName,
+                        ext: path.extname(file),
+                        duration: assDuration
+                    }
+                }
+                else if (path.extname(file) === '.vtt') {
+                    const vttDuration = await getVttDuration(file)
+                    return {
+                        fileName: path.basename(file),
+                        fileDirName: dirName === '.' ? null : dirName,
+                        ext: path.extname(file),
+                        duration: vttDuration
                     }
                 }
                 else {
                     return {
-                        fileName: sfile.fileName,
-                        fileDirName: sfile.fileDirName,
-                        hash: `${rjcode}/${index}`,
-                        ext: sfile.ext,
-                    }
+                        fileName: path.basename(file),
+                        fileDirName: dirName === '.' ? null : dirName,
+                        ext: path.extname(file),
+                    };
                 }
             })
-    
-            // console.log(sortedFilesHash);
+        
+            return Promise.all(unSortedFilesPromises)
+            .then(unSortedFiles => {
+                const sortedFiles = orderBy(
+                    unSortedFiles, [v => v.fileDirName, v => v.fileName, v => v.ext]
+                )
+        
+                const sortedFilesHash = sortedFiles.map((sfile, index) => {
+                    if (sfile.duration || sfile.duration >= 0) {
+                        return {
+                            fileName: sfile.fileName,
+                            fileDirName: sfile.fileDirName,
+                            hash: `${rjcode}/${index}`,
+                            ext: sfile.ext,
+                            duration: sfile.duration
+                        }
+                    }
+                    else {
+                        return {
+                            fileName: sfile.fileName,
+                            fileDirName: sfile.fileDirName,
+                            hash: `${rjcode}/${index}`,
+                            ext: sfile.ext,
+                        }
+                    }
+                })
+        
+                // console.log(sortedFilesHash);
+                return sortedFilesHash
+            })
+            .catch(err => {
+                console.error('promise', err)
+            })
+        }
+        else {
+            const sortedFiles = orderBy(filteredFiles.map(file => {
+                const shortFilePath = file.replace(path.join(dir, '/'), '');
+                const dirName = path.dirname(shortFilePath);
+
+                return {
+                    fileName: path.basename(file),
+                    fileDirName: dirName === '.' ? null : dirName,
+                    ext: path.extname(file),
+                }
+            }),[v => v.fileDirName, v => v.fileName, v => v.ext])
+
+            const sortedFilesHash = sortedFiles.map((sfile, index) => {
+                return {
+                    fileName: sfile.fileName,
+                    fileDirName: sfile.fileDirName,
+                    hash: `${rjcode}/${index}`,
+                    ext: sfile.ext,
+                }
+            })
+
             return sortedFilesHash
-        })
-        .catch(err => {
-            console.error('promise', err)
-        })
+        }
     })
 
 /**
@@ -328,9 +353,9 @@ const prcSend = payload => {
     }
 }
 
-function getLrcDuration(lrcPath) {
+async function getLrcDuration(lrcPath) {
     try {
-        const content = fs.readFileSync(lrcPath, 'utf-8');
+        const content = await fs.readFile(lrcPath, 'utf-8');
         const captions = subsrt.parse(content, { format: 'lrc'});
         if (captions.length === 0) {
             return 'noContent'
@@ -356,9 +381,9 @@ function getLrcDuration(lrcPath) {
     
 }
 
-function getVttDuration(VttPath) {
+async function getVttDuration(VttPath) {
     try {
-        const content = fs.readFileSync(VttPath, 'utf-8')
+        const content = await fs.readFile(VttPath, 'utf-8')
         const parser = new WebVTTParser ();
         const parsed = parser.parse(content);
         if (parsed.cues.length === 0) {
@@ -374,9 +399,9 @@ function getVttDuration(VttPath) {
     }
 }
 
-function getSrtDuration(srtPath) {
+async function getSrtDuration(srtPath) {
     try {
-        const content = fs.readFileSync(srtPath, 'utf-8')
+        const content = await fs.readFile(srtPath, 'utf-8')
         const parsed = vttParser.fromVtt(content);
         if (parsed.length === 0) {
             return 'noContent'
@@ -402,9 +427,9 @@ function timestampToSeconds(timestamp) {
            parseInt(millisecond) / 1000;
 }
 
-function getAssDuration(assPath) {
+async function getAssDuration(assPath) {
     try {
-        const content = fs.readFileSync(assPath, 'utf-8');
+        const content = await fs.readFile(assPath, 'utf-8');
         const parsed = subsrt.parse(content, { format: 'ass' });
         const caption = parsed.filter(sub => sub.type === 'caption')
         if (caption.length === 0) {
