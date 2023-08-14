@@ -164,4 +164,23 @@ router.get('/tracks/:id', (req, res) => {
     })
 })
 
+router.get('/ramdonPlay', async (req, res) => {
+    try {
+        const workCount = await db('ys').count({count: 'rj_code'})
+        const count = workCount[0].count
+        const randOffset = Math.floor(Math.random() * (count - 1));
+        const rjcode = await 
+            db('ys').select('rj_code')
+            .offset(randOffset).limit(1).pluck('rj_code')
+        res.status(200).json({
+            rj_code: rjcode[0]
+        })
+    }
+    catch(err) {
+        res.status(500).json({
+            error: err
+        })
+    }
+})
+
 module.exports = router;

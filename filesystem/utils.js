@@ -51,7 +51,7 @@ const getWorkTrack = (rjcode, dir, durationEnable = true) => recursiveReaddir(di
             const ext = path.extname(file).toLowerCase()
 
             return (ext === '.mp3' || ext === '.ogg' || ext === '.opus' || ext === '.wav' || ext === '.aac'
-            || ext === '.flac' || ext === '.webm' || ext === '.mp4'|| ext === '.m4a' 
+            || ext === '.flac' || ext === '.webm' || ext === '.mp4'|| ext === '.m4a' || ext === '.vtt'
             || ext === '.txt' || ext === '.lrc' || ext === '.srt' || ext === '.ass'
             || ext === '.pdf'
             || ext === '.jpg' || ext === '.jpeg' || ext === '.png' || ext === '.webp');
@@ -245,7 +245,11 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         const mediaStreamUrl = config.offloadMedia ? offloadStreamUrl : mediaStreamBaseUrl + track.hash;
         const mediaDownloadUrl = config.offloadMedia ? offloadDownloadUrl : mediaDownloadBaseUrl + track.hash;
     
-        if (track.ext === '.txt' || track.ext === '.lrc' || track.ext === '.srt' || track.ext === '.ass') { 
+        if (track.ext === '.txt' 
+            || track.ext === '.lrc' 
+            || track.ext === '.srt' 
+            || track.ext === '.ass'
+            || track.ext === '.vtt') { 
             if (track.ext !== '.txt') {
                 fatherFolder.push({
                     type: 'text',
