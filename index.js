@@ -57,7 +57,11 @@ if (process.env.NODE_ENV === 'development') {
         var p = new Date().toString().replace(/[A-Z]{3}\+/,'+').split(/ /);
         return( p[2]+'/'+p[1]+'/'+p[3]+':'+p[4]+' '+p[5] );
     });
-    server.use(morgan('combined', { stream: accessLogStream }, ':date'))
+
+    morgan.token('real-ip', (req) => {
+        return req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    })
+    server.use(morgan(':real-ip - :date[clf] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"', { stream: accessLogStream }))
 }
 
 
