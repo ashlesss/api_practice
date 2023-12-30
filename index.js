@@ -52,7 +52,12 @@ if (process.env.NODE_ENV === 'development') {
         fs.unlinkSync(path.join(__dirname, 'access.log'))
     }
     const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' });
-    server.use(morgan('combined', { stream: accessLogStream }))
+
+    morgan.token('date', function() {
+        var p = new Date().toString().replace(/[A-Z]{3}\+/,'+').split(/ /);
+        return( p[2]+'/'+p[1]+'/'+p[3]+':'+p[4]+' '+p[5] );
+    });
+    server.use(morgan('combined', { stream: accessLogStream }, ':date'))
 }
 
 
