@@ -8,6 +8,7 @@ const mm = require('music-metadata');
 const { WebVTTParser } = require('webvtt-parser');
 const vttParser = require('subtitles-parser-vtt');
 const subsrt = require('subsrt');
+const promiseLimit = require('promise-limit')
 
 async function* getFolderList(rootFolder, current = '', depth = 0 ) { 
 
@@ -46,143 +47,172 @@ async function* getFolderList(rootFolder, current = '', depth = 0 ) {
  * @returns Work tracks array.
  */
 const getWorkTrack = (rjcode, dir, durationEnable = true) => recursiveReaddir(dir)
-    .then(files => {
-        const filteredFiles = files.filter(file => {
-            const ext = path.extname(file).toLowerCase()
+.then(files => {
+    const filteredFiles = files.filter(file => {
+        const ext = path.extname(file).toLowerCase()
 
-            return (ext === '.mp3' || ext === '.ogg' || ext === '.opus' || ext === '.wav' || ext === '.aac'
-            || ext === '.flac' || ext === '.webm' || ext === '.mp4'|| ext === '.m4a' || ext === '.vtt'
-            || ext === '.txt' || ext === '.lrc' || ext === '.srt' || ext === '.ass'
-            || ext === '.pdf'
-            || ext === '.jpg' || ext === '.jpeg' || ext === '.png' || ext === '.webp');
+        return (ext === '.mp3' || ext === '.ogg' || ext === '.opus' || ext === '.wav' || ext === '.aac'
+        || ext === '.flac' || ext === '.webm' || ext === '.mp4'|| ext === '.m4a' || ext === '.vtt'
+        || ext === '.txt' || ext === '.lrc' || ext === '.srt' || ext === '.ass'
+        || ext === '.pdf'
+        || ext === '.jpg' || ext === '.jpeg' || ext === '.png' || ext === '.webp');
+    })
+    // console.log(filteredFiles);
+    // console.log(files);
+
+    if (durationEnable) {
+        const unSortedFilesPromises = filteredFiles.map(file => {
+            const shortFilePath = file.replace(path.join(dir, '/'), '');
+            const dirName = path.dirname(shortFilePath);
+            return limitGetDuration(file, dirName)
         })
-        // console.log(filteredFiles);
-        // console.log(files);
 
-        if (durationEnable) {
-            const unSortedFilesPromises = filteredFiles.map(async file => {
-                const shortFilePath = file.replace(path.join(dir, '/'), '');
-                const dirName = path.dirname(shortFilePath);
-                // console.log(shortFilePath);
-                if (path.extname(file) === '.mp3'
-                || path.extname(file) === '.wav'
-                || path.extname(file) === '.ogg'
-                || path.extname(file) === '.opus'
-                || path.extname(file) === '.aac'
-                || path.extname(file) === '.flac'
-                || path.extname(file) === '.webm'
-                || path.extname(file) === '.m4a') {
-                    const metadata = await mm.parseFile(file);
-                    const duration = metadata.format.duration
+        return Promise.all(unSortedFilesPromises)
+        .then(unSortedFiles => {
+            const sortedFiles = orderBy(
+                unSortedFiles, [v => v.fileDirName, v => v.fileName, v => v.ext]
+            )
+    
+            const sortedFilesHash = sortedFiles.map((sfile, index) => {
+                if (sfile.duration || sfile.duration >= 0) {
                     return {
-                        fileName: path.basename(file),
-                        fileDirName: dirName === '.' ? null : dirName,
-                        ext: path.extname(file),
-                        duration: duration
-                    };
-                }
-                else if (path.extname(file) === '.lrc') {
-                    const lrcDuration = await getLrcDuration(file)
-                    return {
-                        fileName: path.basename(file),
-                        fileDirName: dirName === '.' ? null : dirName,
-                        ext: path.extname(file),
-                        duration: lrcDuration
-                    }
-                }
-                else if (path.extname(file) === '.srt') {
-                    const srtDuration = await getSrtDuration(file)
-                    return {
-                        fileName: path.basename(file),
-                        fileDirName: dirName === '.' ? null : dirName,
-                        ext: path.extname(file),
-                        duration: srtDuration
-                    }
-                }
-                else if (path.extname(file) === '.ass') {
-                    const assDuration = await getAssDuration(file)
-                    return {
-                        fileName: path.basename(file),
-                        fileDirName: dirName === '.' ? null : dirName,
-                        ext: path.extname(file),
-                        duration: assDuration
-                    }
-                }
-                else if (path.extname(file) === '.vtt') {
-                    const vttDuration = await getVttDuration(file)
-                    return {
-                        fileName: path.basename(file),
-                        fileDirName: dirName === '.' ? null : dirName,
-                        ext: path.extname(file),
-                        duration: vttDuration
+                        fileName: sfile.fileName,
+                        fileDirName: sfile.fileDirName,
+                        hash: `${rjcode}/${index}`,
+                        ext: sfile.ext,
+                        duration: sfile.duration
                     }
                 }
                 else {
                     return {
-                        fileName: path.basename(file),
-                        fileDirName: dirName === '.' ? null : dirName,
-                        ext: path.extname(file),
-                    };
-                }
-            })
-        
-            return Promise.all(unSortedFilesPromises)
-            .then(unSortedFiles => {
-                const sortedFiles = orderBy(
-                    unSortedFiles, [v => v.fileDirName, v => v.fileName, v => v.ext]
-                )
-        
-                const sortedFilesHash = sortedFiles.map((sfile, index) => {
-                    if (sfile.duration || sfile.duration >= 0) {
-                        return {
-                            fileName: sfile.fileName,
-                            fileDirName: sfile.fileDirName,
-                            hash: `${rjcode}/${index}`,
-                            ext: sfile.ext,
-                            duration: sfile.duration
-                        }
+                        fileName: sfile.fileName,
+                        fileDirName: sfile.fileDirName,
+                        hash: `${rjcode}/${index}`,
+                        ext: sfile.ext,
                     }
-                    else {
-                        return {
-                            fileName: sfile.fileName,
-                            fileDirName: sfile.fileDirName,
-                            hash: `${rjcode}/${index}`,
-                            ext: sfile.ext,
-                        }
-                    }
-                })
-        
-                // console.log(sortedFilesHash);
-                return sortedFilesHash
-            })
-            .catch(err => {
-                console.error('promise', err)
-            })
-        }
-        else {
-            const sortedFiles = orderBy(filteredFiles.map(file => {
-                const shortFilePath = file.replace(path.join(dir, '/'), '');
-                const dirName = path.dirname(shortFilePath);
-
-                return {
-                    fileName: path.basename(file),
-                    fileDirName: dirName === '.' ? null : dirName,
-                    ext: path.extname(file),
-                }
-            }),[v => v.fileDirName, v => v.fileName, v => v.ext])
-
-            const sortedFilesHash = sortedFiles.map((sfile, index) => {
-                return {
-                    fileName: sfile.fileName,
-                    fileDirName: sfile.fileDirName,
-                    hash: `${rjcode}/${index}`,
-                    ext: sfile.ext,
                 }
             })
-
+    
+            // console.log(sortedFilesHash);
             return sortedFilesHash
-        }
-    })
+        })
+        .catch(err => {
+            return 'failed'
+        })
+    }
+    else {
+        const sortedFiles = orderBy(filteredFiles.map(file => {
+            const shortFilePath = file.replace(path.join(dir, '/'), '');
+            const dirName = path.dirname(shortFilePath);
+
+            return {
+                fileName: path.basename(file),
+                fileDirName: dirName === '.' ? null : dirName,
+                ext: path.extname(file),
+            }
+        }),[v => v.fileDirName, v => v.fileName, v => v.ext])
+
+        const sortedFilesHash = sortedFiles.map((sfile, index) => {
+            return {
+                fileName: sfile.fileName,
+                fileDirName: sfile.fileDirName,
+                hash: `${rjcode}/${index}`,
+                ext: sfile.ext,
+            }
+        })
+
+        return sortedFilesHash
+    }
+})
+
+const getDuration = (file, dirName) => {
+    if (path.extname(file) === '.mp3'
+    || path.extname(file) === '.wav'
+    || path.extname(file) === '.ogg'
+    || path.extname(file) === '.opus'
+    || path.extname(file) === '.aac'
+    || path.extname(file) === '.flac'
+    || path.extname(file) === '.webm'
+    || path.extname(file) === '.m4a') {
+        return mm.parseFile(file)
+        .then(metadata => {
+            const duration = metadata.format.duration
+            return {
+                fileName: path.basename(file),
+                fileDirName: dirName === '.' ? null : dirName,
+                ext: path.extname(file),
+                duration: duration
+            };
+        })
+        // const metadata = await mm.parseFile(file);
+        // const duration = metadata.format.duration
+        // console.log(duration);
+        
+    }
+    else if (path.extname(file) === '.lrc') {
+        // const lrcDuration = await getLrcDuration(file)
+        return getLrcDuration(file).then(lrcDuration => {
+            return {
+                fileName: path.basename(file),
+                fileDirName: dirName === '.' ? null : dirName,
+                ext: path.extname(file),
+                duration: lrcDuration
+            }
+        })
+    }
+    else if (path.extname(file) === '.srt') {
+        // const srtDuration = await getSrtDuration(file)
+        return getSrtDuration(file).then(srtDuration => {
+            return {
+                fileName: path.basename(file),
+                fileDirName: dirName === '.' ? null : dirName,
+                ext: path.extname(file),
+                duration: srtDuration
+            }
+        })
+    }
+    else if (path.extname(file) === '.ass') {
+        // const assDuration = await getAssDuration(file)
+        return getAssDuration(file).then(assDuration => {
+            return {
+                fileName: path.basename(file),
+                fileDirName: dirName === '.' ? null : dirName,
+                ext: path.extname(file),
+                duration: assDuration
+            }
+        })
+    }
+    else if (path.extname(file) === '.vtt') {
+        // const vttDuration = await getVttDuration(file)
+        return getVttDuration(file).then(vttDuration => {
+            return {
+                fileName: path.basename(file),
+                fileDirName: dirName === '.' ? null : dirName,
+                ext: path.extname(file),
+                duration: vttDuration
+            }
+        })
+    }
+    else {
+        return {
+            fileName: path.basename(file),
+            fileDirName: dirName === '.' ? null : dirName,
+            ext: path.extname(file),
+        };
+    }
+}
+
+const limit = promiseLimit(config.getFileDurationMaxParallelism ? 
+    config.getFileDurationMaxParallelism : 2)
+/**
+ * 
+ * @param {String} file Absolute directory of requested work
+ * @param {String} dirName Directory name
+ * @returns 
+ */
+const limitGetDuration = (file, dirName) => {
+    return limit(() => getDuration(file, dirName))
+}
 
 /**
  * 
@@ -455,5 +485,5 @@ module.exports = {
     getWorkTrack,
     toTree,
     joinFragments,
-    prcSend
+    prcSend,
 }

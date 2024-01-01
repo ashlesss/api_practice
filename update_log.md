@@ -3,6 +3,13 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 12/31/2023
+
+1. Get media file's duration at scan and store it to the database.
+2. Add health check to backend to notify frontend.
+3. Change query work's tracks structures.(Refactor the `getWorkTracks` function)
+4. Add update work's tracks module. 
+
 ## 12/30/2023
 
 1. Fix some typos.

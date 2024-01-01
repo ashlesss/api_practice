@@ -49,11 +49,24 @@ const createSchema = () => db.schema.createTable('ys', tbl => {
     tbl.foreign('va_rjcode').references('rj_code').inTable('ys')
     tbl.primary(['va_id', 'va_rjcode'])
 })
+.createTable('t_user', tbl => {
+    tbl.increments('userId').primary()
+    tbl.text('username', 128).notNullable().unique().index()
+    tbl.text('password', 255).notNullable()
+    tbl.text('group').notNullable()
+})
+.createTable('t_tracks', tbl => {
+    tbl.string('track_rjcode')
+    tbl.text('tracks').notNullable()
+
+    tbl.foreign('track_rjcode').references('rj_code').inTable('ys').onDelete('CASCADE')
+})
 .raw(`
     CREATE VIEW IF NOT EXISTS works_w_metadata
     AS
     SELECT baseQueryWithVA.*,
-    json_object('tags', json_group_array(json_object('tag_id', t_tag_id.id, 'tag_name', t_tag_id.tag_name))) AS tags
+    json_object('tags', json_group_array(json_object('tag_id', t_tag_id.id, 'tag_name', t_tag_id.tag_name))) AS tags,
+    t_tracks.tracks AS tracks
     FROM (
     SELECT baseQuery.*,
         json_object('vas', json_group_array(json_object('va_id', t_va_id.id, 'va_name', t_va_id.va_name))) AS vas
@@ -61,6 +74,8 @@ const createSchema = () => db.schema.createTable('ys', tbl => {
         SELECT ys.rj_code,
         ys.alt_rj_code,
         ys.work_title,
+        ys.userset_rootdir,
+        ys.work_dir,
         ys.work_main_img,
         ys.circle_id,
         t_circle.circle_name,
@@ -82,6 +97,7 @@ const createSchema = () => db.schema.createTable('ys', tbl => {
     ) AS baseQueryWithVA
     LEFT JOIN t_tag ON t_tag.tag_rjcode = baseQueryWithVA.rj_code
     LEFT JOIN t_tag_id ON t_tag_id.id = t_tag.tag_id
+    LEFT JOIN t_tracks On t_tracks.track_rjcode = baseQueryWithVA.rj_code
     GROUP BY baseQueryWithVA.rj_code
 `)
 .then(() => {

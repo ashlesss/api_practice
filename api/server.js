@@ -8,12 +8,18 @@ const configRoute = require('../routes/config')
 
 module.exports = server => {
     if (config.auth) {
+        server.get('/api/health', (req, res) => {
+            res.status(200).send('OK')
+        })
         server.use('/api/query', routeGuard, dbquery);
         server.use('/api/media', routeGuard, media);
         server.use('/api/config', routeGuard, configRoute)
         server.use('/api/auth', auth)
     }
     else {
+        server.get('/api/health', (req, res) => {
+            res.status(200).send('OK')
+        })
         server.use('/api/query', dbquery);
         server.use('/api/media', media);
         server.use('/api/config', configRoute)

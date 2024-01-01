@@ -5,6 +5,10 @@ const dbEnv = config.production ? 'production' : 'development'
 const Config = require('../knexfile')[dbEnv]
 const db = knex(Config)
 const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
+const { getWorkTrack } = require('../filesystem/utils')
+const path = require('node:path');
+const promiseLimit = require('promise-limit')
+const { prcSend } = require('../filesystem/utils')
 
 /**
  * This method will not check for the duplicate rjcode.
@@ -17,6 +21,7 @@ const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
  */
 const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx => 
     trx('ys')
+    .transacting(trx)
     .insert({
         rj_code: work.workno,
         alt_rj_code: work.alt_rj_code,
@@ -44,6 +49,7 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
         for (let i = 0; i < genres.length; i++) {
             promises.push(
                 trx('t_tag_id')
+                .transacting(trx)
                 .insert({
                     id: genres[i].id,
                     tag_name: genres[i].name
@@ -51,6 +57,7 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
                 .onConflict().ignore()
                 .then(() => 
                     trx('t_tag')
+                    .transacting(trx)
                     .insert({
                         tag_id: genres[i].id,
                         tag_rjcode: work.workno
@@ -62,6 +69,7 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
 
         promises.push(
             trx('t_circle')
+            .transacting(trx)
             .insert({
                 id: work.circle_id,
                 circle_name: work.maker_name
@@ -72,28 +80,44 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
 
         // Add va to work
         const va = JSON.parse(work.va)
-            for (let i = 0; i < va.length; i++) {
-                promises.push(
-                    trx('t_va_id')
+        for (let i = 0; i < va.length; i++) {
+            promises.push(
+                trx('t_va_id')
+                .transacting(trx)
+                .insert({
+                    id: va[i].id,
+                    va_name: va[i].name
+                })
+                .onConflict().ignore()
+                .then(() => 
+                    trx('t_va')
+                    .transacting(trx)
                     .insert({
-                        id: va[i].id,
-                        va_name: va[i].name
+                        va_id: va[i].id,
+                        va_rjcode: work.workno
                     })
                     .onConflict().ignore()
-                    .then(() => 
-                        trx('t_va')
-                        .insert({
-                            va_id: va[i].id,
-                            va_rjcode: work.workno
-                        })
-                        .onConflict().ignore()
-                    )
                 )
-            }
+            )
+        }
 
-        return Promise.all(promises).then(() => trx)
+        return Promise.all(promises)
+        .then(() => trx.commit())
+        .catch(err => {
+            console.error(err)
+            return trx.rollback()
+        })
     })
 )
+.then(async () => {
+    const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === userSetRootDir);
+    const tracks = await getWorkTrack(work.workno, path.join(rootFolder.path, workdir));
+    
+    await db('t_tracks').insert({
+        track_rjcode: work.workno,
+        tracks: JSON.stringify(tracks)
+    });
+})
 
 /**
  * Fetching work's metadata, add work and its metadata into the data base.
@@ -174,10 +198,78 @@ const updateWorkDir = (rjcode, newDir) => db.transaction(trx =>
     .where({rj_code: rjcode})
 )
 
+/**
+ * Update all the work's tracks info.
+ * Ready for process.fork()
+ */
+const updateAllWorksDuration = () => {
+    db('works_w_metadata')
+    .select('rj_code', 'work_title', 'work_dir', 'userset_rootdir')
+    .then(works => {
+        const limit = promiseLimit(config.maxParallelism ? config.maxParallelism : 16)
+        const limitedGetWorkTrakcs = (rjcode, dir) => {
+            return limit(() => getWorkTrack(rjcode, dir))
+        }
+
+        let count = {
+            updated: 0,
+            failed: 0
+        }
+
+        // Remove works that are not belong to rootFolder
+        const validatedWorks = works.map(work => {
+            const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
+            if (rootFolder) {
+                return work
+            }
+        })
+
+        const promises = validatedWorks.map(work => {
+            const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
+            return limitedGetWorkTrakcs(work.rj_code, path.join(rootFolder.path, work.work_dir))
+            .then(result => {
+                if (result !== 'failed') {
+                    prcSend(`${work.rj_code} tracks updated.`)
+                    count.updated++
+                }
+                else {
+                    prcSend(`${work.rj_code} tracks update failed.`)
+                    count.failed++
+                }
+            })
+        })
+
+        return Promise.all(promises)
+        .then(() => {
+            const msg = `Updating tracks completed: updated: ${count.updated}\n`
+            + `failed: ${count.failed}.`
+            prcSend({status: 'UPDATE_TRACKS_COMPLETED', message: msg})
+
+            process.exit(0)
+        })
+        .catch(err => {
+            if (err.code === 'ENOENT') {
+                prcSend(`Error code: "${err.code}", on path: "${err.path}". `
+                + `Check the path if the path exists in your system or not.`)
+            }
+            else {
+                prcSend('Updating tracks error')
+            }
+
+            process.exit(1)
+        }) 
+    })
+    .catch(err => {
+        prcSend(`Updating tracks error when querying on database, err: ${err.stack}`)
+        process.exit(1)
+    })
+}
+
 module.exports = {
     getWorksData,
     updateSaledata,
     updateWorkSaledata,
     db,
     updateWorkDir,
+    updateAllWorksDuration
 };

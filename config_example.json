@@ -13,5 +13,6 @@
     "JWTsecret": "<Your_JWT_secret>",
     "JWTexpiration": "1w",
     "auth": true,
-    "production": false
+    "production": false,
+    "getFileDurationMaxParallelism": 2
 }
