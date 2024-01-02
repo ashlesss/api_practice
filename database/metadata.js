@@ -216,15 +216,16 @@ const updateAllWorksDuration = () => {
             failed: 0
         }
 
+        let validWorks = []
         // Remove works that are not belong to rootFolder
-        const validatedWorks = works.map(work => {
+        works.map(work => {
             const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
             if (rootFolder) {
-                return work
+                validWorks.push(work)
             }
         })
 
-        const promises = validatedWorks.map(work => {
+        const promises = validWorks.map(work => {
             const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
             return limitedGetWorkTrakcs(work.rj_code, path.join(rootFolder.path, work.work_dir))
             .then(result => {

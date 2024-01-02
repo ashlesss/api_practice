@@ -4,45 +4,18 @@ const server = express();
 const api = require('./api/server');
 const cors = require('cors');
 const http = require('http').createServer(server);
-const io = require('socket.io')(http, {
-    cors: {
-        origin: '*'
-    }
-});
-const child_process = require('child_process')
-const { config } = require('./config')
 const { initApp } = require('./database/init');
 require('dotenv').config()
 const morgan = require('morgan')
 const fs = require("fs-extra")
 const path = require('node:path');
+const { initSocket } = require('./socket')
 
 // Init database and config file
 initApp()
 
-io.on("connection", socket => {
-    console.log('Socket connection established');
-
-    socket.emit('ON_SCAN_PAGE', 'Connection to server established.')
-
-    socket.on("scan", res => {
-        if (res === 'START_SCAN') {
-            scanner = child_process.fork('./filesystem/scanner.js')
-            scanner.on('message', msg => {
-                if (msg.status) {
-                    socket.emit('scan_completed', msg.message)
-                }
-                else {
-                    socket.emit('progress', msg)
-                }
-            })
-        }
-        else {
-            socket.emit('progress', 'Not scanning')
-        }
-    })
-})
-
+// Init socket.io
+initSocket(http)
 
 server.use(cors())
 server.use(express.json())

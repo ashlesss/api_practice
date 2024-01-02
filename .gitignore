@@ -17,3 +17,5 @@ appDatabase/
 access.log
 
 cover.js
+
+filesystem/scanModuleTest.js

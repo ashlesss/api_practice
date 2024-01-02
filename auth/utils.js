@@ -78,7 +78,40 @@ const getTokenInfo = (req, res, isAuth) => {
     }
 }
 
+/**
+ * Verify given token and return token information
+ * 
+ * Use for websocket ONLY.
+ * 
+ * @param {String} token 
+ * @returns token information
+ */
+const verifyToken = (token) => {
+    const secret = config.JWTsecret
+    return jwt.verify(token, secret, (err, decodedToken) => {
+        if (err) {
+            return {
+                status: 'error',
+                message: 'Invalid token'
+            }
+        }
+        else {
+            if (decodedToken.user === 'admin') {
+                decodedToken.status = 'authorized'
+                return decodedToken
+            }
+            else {
+                return {
+                    status: 'unauthorized',
+                    message: 'Only admin has permission to connect to socket'
+                }
+            }
+        }
+    })
+}
+
 module.exports = {
     signToken,
-    getTokenInfo
+    getTokenInfo,
+    verifyToken
 }

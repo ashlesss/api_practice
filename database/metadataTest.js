@@ -1,7 +1,7 @@
 //cSpell:disable
 const md = require('./metadata')
 
-md.updateAllWorksDuration()
+// md.updateAllWorksDuration()
 
 // md.getWorksData('RJ343788', '/mnt/hgfs/test/2/')
 // .then(res => {
