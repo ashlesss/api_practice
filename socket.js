@@ -9,7 +9,11 @@ const { verifyToken } = require('./auth/utils')
  * @param {object} server Http or Https server
  */
 const initSocket = (server) => {
-    const io = socket(server)
+    const io = socket(server, {
+        cors: {
+            origin: '*'
+        }
+    })
     io.on("connection", socket => {
         console.log('[socket.io] Socket connection initiated');
         if (config.auth) {
@@ -87,6 +91,10 @@ const socketOperations = socket => {
                 }
             })
         }
+    })
+
+    socket.on('disconnect', reason => {
+        console.log(`[socket.io] Connection to client was disconnected, reason: ${reason}`);
     })
 }
 
