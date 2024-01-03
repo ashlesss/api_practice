@@ -3,6 +3,10 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 # Known dlsite API issues
 1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
 
+## 1/3/2023
+
+1. Refactor search features.
+
 ## 1/2/2023
 
 1. Fix regex return incorrect RJ code on scanning local RJ folders.
