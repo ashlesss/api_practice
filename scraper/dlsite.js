@@ -5,17 +5,54 @@ const { config } = require('../config')
 const path = require('node:path');
 
 /**
+ * Get zh_CN and en_US work metadata
  * 
+ * This function will made 3 api requests to dlsite per work.
  * @param {string} rjcode RJ code
  * @returns Object work 
  */
 const scGetMetadata = rjcode => new Promise((resolve, reject) => {
-    const url = `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`;
+
     let work = {};
 
+    // Get English metadata
     axios({
         method: 'GET',
-        url: url,
+        url: `https://www.dlsite.com/maniax/api/=/product.json?locale=en_US&workno=${rjcode}`
+    })
+    .then(res => {
+        const mdata = res.data
+        if (mdata.length === 0) {
+            reject(new Error(`No metadata returned by RJcode: ${rjcode}`))
+        }
+
+        work.enGenres = mdata[0].genres ? JSON.stringify(mdata[0].genres) : null
+    })
+    .catch(err => {
+        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
+    })
+
+    // Get Japanese metadata
+    axios({
+        method: 'GET',
+        url: `https://www.dlsite.com/maniax/api/=/product.json?locale=ja_JP&workno=${rjcode}`,
+    })
+    .then(res => {
+        const mdata = res.data
+        if (mdata.length === 0) {
+            reject(new Error(`No metadata returned by RJcode: ${rjcode}`))
+        }
+
+        work.jpGenres = mdata[0].genres ? JSON.stringify(mdata[0].genres) : null
+    })
+    .catch(err => {
+        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
+    })
+
+    // Get Chinese metadata
+    axios({
+        method: 'GET',
+        url: `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`,
     })
     .then(res => {
         return res.data
@@ -25,80 +62,22 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
             reject(new Error(`No metadata returned by RJcode: ${rjcode}`))
         }
 
-        if (mdata[0].translation_info.is_original === true) {
-            work.workno = mdata[0].workno;
-            work.alt_rj_code = Number(mdata[0].workno.slice(2))
-            work.work_name = mdata[0].work_name;
-            work.circle_id = Number(mdata[0].circle_id.slice(2))
-            work.nsfw = (mdata[0].age_category_string === 'adult') ? true: false;
-            work.official_price = mdata[0].official_price;
-            work.regist_date = mdata[0].regist_date.slice(0, 10);
-            // work.rate_count_detail = mdata[0].rate_count_detail;
-            work.genres = JSON.stringify(mdata[0].genres)
-            work.maker_name = mdata[0].maker_name
-            work.va = JSON.stringify(mdata[0].creaters.voice_by)
-            if (mdata[0].options) {
-                if (mdata[0].options.match(/\bCHI_HANS\b/) || mdata[0].options.match(/\bCHI_HANT\b/)) {
-                    work.has_subtitle = true
-                }
-                else {
-                    work.has_subtitle = false
-                }
-            }
-            else {
-                work.has_subtitle = false
-            }
-            resolve(work)
-        }
-        else {
-            return redirectedGetMetadata(mdata[0].translation_info.original_workno, mdata[0].work_name, rjcode)
-            .then(rmdata => {
-                resolve(rmdata)
-            })
-        }
-    })
-    .catch(err => {
-        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
-    })
-})
+        work.workno = mdata[0].workno;
+        work.alt_rj_code = Number(mdata[0].workno.slice(2))
+        work.work_name = mdata[0].work_name;
+        work.circle_id = Number(mdata[0].circle_id.slice(2))
+        work.nsfw = (mdata[0].age_category_string === 'adult') ? true: false;
+        work.official_price = mdata[0].official_price;
+        work.regist_date = mdata[0].regist_date.slice(0, 10);
+        // work.rate_count_detail = mdata[0].rate_count_detail;
+        work.genres = mdata[0].genres ? JSON.stringify(mdata[0].genres) : null
+        work.maker_name = mdata[0].maker_name
+        work.va = mdata[0].creaters.voice_by ? JSON.stringify(mdata[0].creaters.voice_by) : null
 
-/**
- * 
- * @param {string} originRjcode Original RJ code that is redirected to original 
- * work's RJ code from folder work's RJ code.
- * @param {string} rworkname Chinese work name.
- * @param {string} folderRjcode RJ code from user folder.
- * @returns work object that stores work metadata.
- */
-const redirectedGetMetadata = (originRjcode, rworkname, folderRjcode) => new Promise((resolve, reject) => {
-    const url = `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${originRjcode}`
-    let work = {}
+        work.imageUrl = mdata[0].image_main.url ? mdata[0].image_main.url : mdata[0].image_thum.url
 
-    axios({
-        method: 'GET',
-        url: url,
-    })
-    .then(res => {
-        return res.data
-    })
-    .then(rmdata => {
-        if (rmdata.length === 0) {
-            reject(new Error(`No redirected metadata returned by RJcode: ${rjcode}`))
-        }
-        work.workno = folderRjcode;
-        work.alt_rj_code = Number(folderRjcode.slice(2))
-        work.original_workno = rmdata[0].workno
-        work.work_name = rworkname;
-        work.circle_id = Number(rmdata[0].circle_id.slice(2))
-        work.nsfw = (rmdata[0].age_category_string === 'adult') ? true: false;
-        work.official_price = rmdata[0].official_price;
-        work.regist_date = rmdata[0].regist_date.slice(0, 10);
-        // work.rate_count_detail = rmdata[0].rate_count_detail;
-        work.genres = JSON.stringify(rmdata[0].genres)
-        work.maker_name = rmdata[0].maker_name
-        work.va = JSON.stringify(rmdata[0].creaters.voice_by)
-        if (rmdata[0].options) {
-            if (rmdata[0].options.match(/\bCHI_HANS\b/) || rmdata[0].options.match(/\bCHI_HANT\b/)) {
+        if (mdata[0].options) {
+            if (mdata[0].options.match(/\bCHI_HANS\b/) || mdata[0].options.match(/\bCHI_HANT\b/)) {
                 work.has_subtitle = true
             }
             else {
@@ -111,7 +90,7 @@ const redirectedGetMetadata = (originRjcode, rworkname, folderRjcode) => new Pro
         resolve(work)
     })
     .catch(err => {
-        reject(`Get redirected work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
+        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
     })
 })
 
@@ -156,57 +135,36 @@ const scGetSaledata = rjcode => new Promise((resolve, reject) => {
  * @param {string} rjcode 
  * @return Img name
  */
-const scGetImg = (rjcode, folderRjcode) => new Promise((resolve, reject) => {
-    let sid;
-    if (rjcode.length === 8) {
-        let nrj = Number(rjcode.slice(2))
-        let tmp = (nrj % 1000 === 0) ? nrj : nrj - (nrj % 1000) + 1000
-        sid = (`000000${tmp}`).slice(-6)
-    }
-    else {
-        let nrj = Number(rjcode.slice(2))
-        let tmp = (nrj % 1000 === 0) ? nrj : nrj - (nrj % 1000) + 1000
-        sid = (`00000000${tmp}`).slice(-8)
-    }
+const scGetImg = (rjcode, imgUrl) => new Promise((resolve, reject) => {
 
+    const fullUrl = `https:${imgUrl}`
+    const parsedUrl = new URL(fullUrl)
+    const imgName = path.basename(parsedUrl.pathname)
     imgPath = config.img_folder
     // `${imgPath}${rjcode}_img_main.jpg`
-    if (fs.existsSync(path.join(imgPath, `${rjcode}_img_main.jpg`))) {
-        // console.log(`${rjcode}_img_main.jpg already exists`);
+    if (fs.existsSync(path.join(imgPath, imgName))) {
+        console.log(`${imgName} already exists`);
         resolve({
-            main_img: `${rjcode}_img_main.jpg`
+            main_img: imgName
         });
     }
     else {
         axios({
             method: 'GET',
-            url: `https://img.dlsite.jp/modpub/images2/work/doujin/RJ${sid}/${rjcode}_img_main.jpg`,
+            url: fullUrl,
             responseType: 'stream'
         })
         .then(res => {
-            if (folderRjcode) {
-                // `${imgPath}${folderRjcode}_img_main.jpg`
-                res.data.pipe(fs.createWriteStream(path.join(imgPath, `${rjcode}_img_main.jpg`)));
-                res.data.on('end', () => {
-                    console.log(`${folderRjcode}_img_main.jpg download completed.`);
-                    resolve({
-                        main_img: `${folderRjcode}_img_main.jpg`
-                    });
-                })
-            }
-            else {
-                res.data.pipe(fs.createWriteStream(path.join(imgPath, `${rjcode}_img_main.jpg`)));
-                res.data.on('end', () => {
-                    console.log(`${rjcode}_img_main.jpg download completed.`);
-                    resolve({
-                        main_img: `${rjcode}_img_main.jpg`
-                    });
-                })
-            }
-            
+            res.data.pipe(fs.createWriteStream(path.join(imgPath, imgName)));
+            res.data.on('end', () => {
+                console.log(`${imgName} download completed.`);
+                resolve({
+                    main_img: imgName
+                });
+            })
         })
         .catch(err => {
-            reject(`Download ${folderRjcode ? folderRjcode : rjcode} cover failed with message: ${err.message}`);
+            reject(`Download ${rjcode} cover failed with message: ${err.message}`);
         })
     }
 })
@@ -222,18 +180,10 @@ const scWorkAllData = rjcode => {
     .then(metadata => {
         return scGetSaledata(metadata.workno)
         .then(saledata => {
-            if (metadata.original_workno) {
-                return scGetImg(metadata.original_workno, metadata.workno)
+            return scGetImg(metadata.workno, metadata.imageUrl)
                 .then(imgName => {
                     return Object.assign(work, metadata, saledata, imgName)
                 })
-            }
-            else {
-                return scGetImg(metadata.workno)
-                .then(imgName => {
-                    return Object.assign(work, metadata, saledata, imgName)
-                })
-            }
         })
     })
     .catch(err => {
@@ -246,5 +196,5 @@ module.exports = {
     scGetSaledata,
     scGetImg,
     scWorkAllData,
-    redirectedGetMetadata
+    // redirectedGetMetadata
 }

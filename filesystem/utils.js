@@ -20,10 +20,11 @@ async function* getFolderList(rootFolder, current = '', depth = 0 ) {
 
       try {
         if ((await fs.promises.stat(absolutePath)).isDirectory()) {
-            if (folder.match(/RJ(\d{6}|\d{8})/i)) { 
+            const regex = /RJ\d{6,8}/i
+            if (folder.match(regex)) { 
                 // Found a work folder, don't go any deeper.
                 yield {
-                    rjcode: folder.match(/RJ(\d{6}|\d{8})/i)[0],
+                    rjcode: folder.match(regex)[0],
                     name: relativePath,
                     userSetRootDir: rootFolder.name,
         

@@ -35,15 +35,15 @@ async function getWorks(page, order, sort, subtitle) {
 
     const curWorks = await db.raw(
         `SELECT *
-        FROM works_w_metadata
+        FROM works_w_metadata_public
         ${sortSub}
         ORDER BY ${orderQuery} ${sort}
         LIMIT ${worksPerPage}
         OFFSET ${(page - 1) * worksPerPage}`
     )
     
-    const totalWorks = sortSub ? await db('works_w_metadata').where({has_subtitle: 1}).count({count: 'rj_code'}) 
-        : await db('works_w_metadata').count({count: 'rj_code'})
+    const totalWorks = sortSub ? await db('works_w_metadata_public').where({has_subtitle: 1}).count({count: 'rj_code'}) 
+        : await db('works_w_metadata_public').count({count: 'rj_code'})
     const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
 
     let works = [];
@@ -66,6 +66,40 @@ async function getWorks(page, order, sort, subtitle) {
     return {pagination: pagination, works: works}
 }
 
+// async function getWorkByKeyword(keyword, order, sort, subtitle) {
+//     // Extract tag/circle/va id from keyword
+//     let parsedKeyword = parseKeywords(keyword)
+
+// }
+
+// console.log(parseKeywords('$va:Sweet love$ $va:柚木つばめ$ something sp2'));
+
+// function parseKeywords(keywords) {
+//     const regex = /^(\$[^$]+:[^$]+\$)|\s(\$[^$]+:[^$]+\$)/g
+//     let matched = keywords.match(regex)
+//     matched = matched.map(kw => kw.trim())
+
+//     const plainKeywords = matched.reduce((acc, curr) => {
+//         return acc.replace(curr, '')
+//     }, keywords)
+
+//     return {
+//         accurateSearchTerms: splitKeywords(matched),
+//         plainKeywords: plainKeywords.trim().split(" ")
+//     }
+// }
+
+// function splitKeywords(keywords) {
+//     return keywords.map(kw => {
+//         let colonIndex = kw.indexOf(':')
+//         // return {
+//         //     term: kw.slice(1, colonIndex),
+//         //     keyword: kw.slice(colonIndex + 1, -1)
+//         // }
+//         return kw.slice(colonIndex + 1, -1)
+//     })
+// }
+
 /**
  * This method will handle keyword search and return works sorted by keywords.
  * @param {string} keyword Searching keyword by va, tag, circle.
@@ -82,7 +116,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         if (rjcode[0].length === 10) {
             return await db.raw(
                 `SELECT *
-                FROM works_w_metadata
+                FROM works_w_metadata_public
                 WHERE rj_code = '${rjcode[0]}'
                 ${sortSub}`
             )
@@ -90,7 +124,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         else if (rjcode[0].length === 8) {
             return await db.raw(
                 `SELECT *
-                FROM works_w_metadata
+                FROM works_w_metadata_public
                 WHERE rj_code = '${rjcode[0]}'
                 ${sortSub}`
             )
@@ -107,7 +141,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
     if (altRJcode) {
         return db.raw(
             `SELECT *
-            FROM works_w_metadata
+            FROM works_w_metadata_public
             WHERE alt_rj_code = '${altRJcode[0]}'
             ${sortSub}`
         )
@@ -218,7 +252,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
             GROUP BY va_rjcode
             HAVING Count(va_rjcode)=${vaQueryId.length})
             )
-            INNER JOIN works_w_metadata ON works_w_metadata.rj_code = tag_rjcode
+            INNER JOIN works_w_metadata_public ON works_w_metadata_public.rj_code = tag_rjcode
             WHERE tag_id IN (${tagQueryId})
             GROUP BY tag_rjcode
             HAVING Count(tag_rjcode)=${tagQueryId.length}
@@ -236,7 +270,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
-            FROM works_w_metadata AS works
+            FROM works_w_metadata_public AS works
             WHERE works.circle_id IN (${circleQueryId})
             ${queryRSP}
             ${sortSub}
@@ -253,7 +287,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
             FROM 
             (
             SELECT *
-             FROM works_w_metadata AS works
+             FROM works_w_metadata_public AS works
             WHERE works.rj_code IN (
             SELECT tag_rjcode
             FROM t_tag
@@ -277,7 +311,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
             FROM 
             ( 
             SELECT *
-            FROM works_w_metadata AS works
+            FROM works_w_metadata_public AS works
             WHERE works.rj_code IN
             (SELECT va_rjcode
             FROM t_va
@@ -298,7 +332,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
-            FROM works_w_metadata
+            FROM works_w_metadata_public
             WHERE rj_code IN 
             (
             SELECT tag_rjcode
@@ -327,7 +361,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
-            FROM works_w_metadata
+            FROM works_w_metadata_public
             WHERE rj_code IN 
             (SELECT va_rjcode
             FROM t_va
@@ -344,7 +378,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
         const queryRSP = sortByRSP(keyword)
         const result = db.raw(
             `SELECT *
-            FROM works_w_metadata
+            FROM works_w_metadata_public
             WHERE rj_code IN 
             (SELECT tag_rjcode
             FROM t_tag
@@ -366,7 +400,7 @@ async function getWorkByKeyword(keyword, order, sort, subtitle) {
     if (queryRSP) {
         return await db.raw(
             `SELECT * 
-            FROM works_w_metadata
+            FROM works_w_metadata_public
             WHERE ${queryRSP.slice(5)}
             ${sortSub}
             ORDER BY ${orderQuery} ${sort}`

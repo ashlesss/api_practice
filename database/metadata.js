@@ -1,8 +1,8 @@
 //cSpell:disable
 const { config } = require('../config')
 const knex = require('knex')
-const dbEnv = config.production ? 'production' : 'development'
-const Config = require('../knexfile')[dbEnv]
+// const dbEnv = config.production ? 'production' : 'development'
+const Config = require('../knexfile')['development']
 const db = knex(Config)
 const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
 const { getWorkTrack } = require('../filesystem/utils')
@@ -41,31 +41,36 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
     })
     .onConflict().ignore()
     .then(() => {
-        
         const promises = []
 
         // Add tags to work
-        const genres = JSON.parse(work.genres)
-        for (let i = 0; i < genres.length; i++) {
-            promises.push(
-                trx('t_tag_id')
-                .transacting(trx)
-                .insert({
-                    id: genres[i].id,
-                    tag_name: genres[i].name
-                })
-                .onConflict().ignore()
-                .then(() => 
-                    trx('t_tag')
+        if (work.genres) {
+            const genres = JSON.parse(work.genres)
+            for (let i = 0; i < genres.length; i++) {
+                promises.push(
+                    trx('t_tag_id')
                     .transacting(trx)
                     .insert({
-                        tag_id: genres[i].id,
-                        tag_rjcode: work.workno
+                        id: genres[i].id,
+                        tag_name: genres[i].name,
+                        en_us: processdGenres(work.enGenres, genres[i]),
+                        ja_jp: processdGenres(work.jpGenres, genres[i]),
+                        zh_cn: genres[i].name
                     })
                     .onConflict().ignore()
+                    .then(() => 
+                        trx('t_tag')
+                        .transacting(trx)
+                        .insert({
+                            tag_id: genres[i].id,
+                            tag_rjcode: work.workno
+                        })
+                        .onConflict().ignore()
+                    )
                 )
-            )
+            }
         }
+        
 
         promises.push(
             trx('t_circle')
@@ -79,26 +84,28 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
 
 
         // Add va to work
-        const va = JSON.parse(work.va)
-        for (let i = 0; i < va.length; i++) {
-            promises.push(
-                trx('t_va_id')
-                .transacting(trx)
-                .insert({
-                    id: va[i].id,
-                    va_name: va[i].name
-                })
-                .onConflict().ignore()
-                .then(() => 
-                    trx('t_va')
+        if (work.va) {
+            const va = JSON.parse(work.va)
+            for (let i = 0; i < va.length; i++) {
+                promises.push(
+                    trx('t_va_id')
                     .transacting(trx)
                     .insert({
-                        va_id: va[i].id,
-                        va_rjcode: work.workno
+                        id: va[i].id,
+                        va_name: va[i].name
                     })
                     .onConflict().ignore()
+                    .then(() => 
+                        trx('t_va')
+                        .transacting(trx)
+                        .insert({
+                            va_id: va[i].id,
+                            va_rjcode: work.workno
+                        })
+                        .onConflict().ignore()
+                    )
                 )
-            )
+            }
         }
 
         return Promise.all(promises)
@@ -120,6 +127,22 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
 })
 
 /**
+ * Process mutli languages genres compare target genres their genres id
+ * if it the same return them
+ * 
+ * @param {string[]} targetGenres 
+ * @param {string} compareGenres 
+ * @returns genre name
+ */
+const processdGenres = (targetGenres, compareGenres) => {
+    if (targetGenres) {
+        return JSON.parse(targetGenres).find(e => e.id === compareGenres.id).name
+    }
+
+    return null
+}
+
+/**
  * Fetching work's metadata, add work and its metadata into the data base.
  * @param {string} rjcode RJcode
  * @param {string} workdir work's directory
@@ -128,19 +151,14 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
 const getWorksData = (rjcode, workdir, userSetRootDir) => {
     return scWorkAllData(rjcode)
     .then(workdata => {
-        if (typeof workdata.va !== 'undefined') {
-            return insertWorkTodb(workdata, workdir, userSetRootDir)
-            .then(() => {
-                // console.log(`${rjcode} has been added to db`);
-                return 'added'
-            })
-            .catch(err => {
-                return err.message
-            })
-        }
-        else {
-            throw new Error(`${rjcode} failed to find any VAs info, Skipped!`)
-        }
+        return insertWorkTodb(workdata, workdir, userSetRootDir)
+        .then(() => {
+            // console.log(`${rjcode} has been added to db`);
+            return 'added'
+        })
+        .catch(err => {
+            return err.message
+        })
     })
     .catch(err => {
         return err.message
@@ -272,5 +290,6 @@ module.exports = {
     updateWorkSaledata,
     db,
     updateWorkDir,
-    updateAllWorksDuration
+    updateAllWorksDuration,
+    insertWorkTodb
 };

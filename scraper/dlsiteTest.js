@@ -1,6 +1,11 @@
 //cSpell:disable
 const dl = require('./dlsite')
 
+// dl.scGetMetadata('RJ01016317')
+// .then(res => {
+//     console.log(res);
+// })
+
 // const test = rjcode => {
 //     const list = ['RJ343788', 'RJ306144']
 
@@ -82,19 +87,19 @@ const dl = require('./dlsite')
 // .then(res => {
 //     console.log(res);
 // })
-const list = ['RJ307093', 'RJ01018106']
+// const list = ['RJ307093', 'RJ01018106']
 
-const promises = list.map(rj => {
-    dl.scWorkAllData(rj)
-    .then(res => {
-        console.log(res);
-        // if (res.original_workno) {
-        //     console.log(res.original_workno);
-        // }
-    })
-})
+// const promises = list.map(rj => {
+//     dl.scWorkAllData(rj)
+//     .then(res => {
+//         console.log(res);
+//         // if (res.original_workno) {
+//         //     console.log(res.original_workno);
+//         // }
+//     })
+// })
 
-Promise.all(promises)
+// Promise.all(promises)
 
 // dl.scWorkAllData('RJ01018106')
 // .then(res => {
