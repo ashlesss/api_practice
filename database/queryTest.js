@@ -27,9 +27,11 @@ const { getWorks, randomOrder, getWorkByKeyword } = require('./query')
 //     '秋山はるる'
 // ]
 
-// const terms = 'Oneesan / Older Girl / Older Sister B-bishop $sell:8500$'
+// const terms = 'Oneesan / Older Girl / Older Sister B-bishop $sell:1000$'
+// const terms = 'Dirty Talk Collar / Chain / Restraints'
 
 // getWorkByKeyword(terms, 'alt_rj_code', 'desc', 0)
 // .then(res => {
 //     console.log(res);
+//     process.exit(0)
 // })

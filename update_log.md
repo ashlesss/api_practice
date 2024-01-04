@@ -1,7 +1,11 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
-# Known dlsite API issues
-1. When user gives work that is translated by dlsite official. The RJ code of that work will not contain any VAs info. And right now there is no way to redirect work to its original work by using info provided in dlsite api.
+## 1/4/2023
+
+1. Optimize work's metadata requests.
+2. Add search support for plain RJ code
+3. When searching RJ code, it now will show the relevant translated works. 
+4. Add `language_editions` metadata to database.
 
 ## 1/3/2023
 

@@ -120,6 +120,32 @@ function splitKeywords(keywords) {
  */
 async function getWorkByKeyword(allTerms, order, sort, subtitle) {
     let pAllTerms = parseKeywords(allTerms)
+
+    if (pAllTerms.plainKeywords) {
+        const matchedRJCode = pAllTerms.plainKeywords.join(' ').match(/(RJ\d{6,8})|(\d{6,8})/i)
+        if (matchedRJCode) {
+            const firstQuery = await db('works_w_metadata_public')
+            .whereLike('rj_code', `%%${matchedRJCode[0]}`)
+            
+            // Now search for language_editions
+            if (firstQuery.length) {
+                const workArray  = JSON.parse(firstQuery[0].language_editions).map(e => e.workno)
+                return await db('works_w_metadata_public')
+                .whereIn('rj_code', workArray)
+                .andWhere(function() {
+                    if (subtitle === 1) {
+                        this.where('has_subtitle', '=', 1)
+                    }
+                })
+                .orderByRaw(`${randomOrder(order)} ${sort}`)
+            }
+            return []
+        }
+    }
+
+    // If plainKeywords have RJ code in it, after call for search rj code then 
+    // RJ code search expired, it shoudn't continue to check for other keywords.
+
     let query = db('works_w_metadata_public');
     let price = -1
     let rate = -1
@@ -186,7 +212,6 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle) {
         }
     })
     .andWhere(function() {
-        // 1. the subtitle
         if (subtitle === 1) {
             this.where('has_subtitle', '=', 1)
         }

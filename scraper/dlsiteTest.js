@@ -5,6 +5,9 @@ const dl = require('./dlsite')
 // .then(res => {
 //     console.log(res);
 // })
+// .catch(err => {
+//     console.error(err);
+// }) 
 
 // const test = rjcode => {
 //     const list = ['RJ343788', 'RJ306144']

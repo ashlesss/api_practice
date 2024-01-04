@@ -13,6 +13,7 @@ const { initSocket } = require('./socket')
 
 // Init database and config file
 initApp()
+.then(() => console.log('[Initialized] App initialized'))
 
 // Init socket.io
 initSocket(http)

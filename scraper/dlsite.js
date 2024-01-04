@@ -5,9 +5,9 @@ const { config } = require('../config')
 const path = require('node:path');
 
 /**
- * Get zh_CN and en_US work metadata
+ * Get zh_CN, ja_JP and en_US work metadata
  * 
- * This function will made 3 api requests to dlsite per work.
+ * This function will made 2 api requests to dlsite per work.
  * @param {string} rjcode RJ code
  * @returns Object work 
  */
@@ -15,69 +15,41 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
 
     let work = {};
 
-    // Get English metadata
-    axios({
-        method: 'GET',
-        url: `https://www.dlsite.com/maniax/api/=/product.json?locale=en_US&workno=${rjcode}`
-    })
+    return Promise.all([
+        axios.get(`https://www.dlsite.com/maniax/api/=/product.json?locale=en_US&workno=${rjcode}`),
+        axios.get(`https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`)
+
+    ])
     .then(res => {
-        const mdata = res.data
-        if (mdata.length === 0) {
-            reject(new Error(`No metadata returned by RJcode: ${rjcode}`))
+        const [enResponse, cnResponse] = res.map(response => response.data)
+
+        if (!enResponse.length) {
+            reject(new Error(`No metadata returned by RJcode requesting with [English language]: ${rjcode}`))
         }
 
-        work.enGenres = mdata[0].genres ? JSON.stringify(mdata[0].genres) : null
-    })
-    .catch(err => {
-        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
-    })
-
-    // Get Japanese metadata
-    axios({
-        method: 'GET',
-        url: `https://www.dlsite.com/maniax/api/=/product.json?locale=ja_JP&workno=${rjcode}`,
-    })
-    .then(res => {
-        const mdata = res.data
-        if (mdata.length === 0) {
-            reject(new Error(`No metadata returned by RJcode: ${rjcode}`))
+        if (!cnResponse.length) {
+            reject(new Error(`No metadata returned by RJcode requesting with [Chinese language]: ${rjcode}`))
         }
 
-        work.jpGenres = mdata[0].genres ? JSON.stringify(mdata[0].genres) : null
-    })
-    .catch(err => {
-        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
-    })
+        work.enGenres = enResponse[0].genres ? JSON.stringify(enResponse[0].genres) : null
 
-    // Get Chinese metadata
-    axios({
-        method: 'GET',
-        url: `https://www.dlsite.com/maniax/api/=/product.json?locale=zh_CN&workno=${rjcode}`,
-    })
-    .then(res => {
-        return res.data
-    })
-    .then(mdata => {
-        if (mdata.length === 0) {
-            reject(new Error(`No metadata returned by RJcode: ${rjcode}`))
-        }
+        work.workno = cnResponse[0].workno;
+        work.alt_rj_code = Number(cnResponse[0].workno.slice(2))
+        work.work_name = cnResponse[0].work_name;
+        work.circle_id = Number(cnResponse[0].circle_id.slice(2))
+        work.nsfw = (cnResponse[0].age_category_string === 'adult') ? true: false;
+        work.official_price = cnResponse[0].official_price;
+        work.regist_date = cnResponse[0].regist_date.slice(0, 10);
+        // work.rate_count_detail = cnResponse[0].rate_count_detail;
+        work.genres = cnResponse[0].genres ? JSON.stringify(cnResponse[0].genres) : null
+        work.maker_name = cnResponse[0].maker_name
+        work.va = cnResponse[0].creaters.voice_by ? JSON.stringify(cnResponse[0].creaters.voice_by) : null
+        work.language_editions = cnResponse[0].language_editions ? JSON.stringify(cnResponse[0].language_editions) : JSON.stringify([])
 
-        work.workno = mdata[0].workno;
-        work.alt_rj_code = Number(mdata[0].workno.slice(2))
-        work.work_name = mdata[0].work_name;
-        work.circle_id = Number(mdata[0].circle_id.slice(2))
-        work.nsfw = (mdata[0].age_category_string === 'adult') ? true: false;
-        work.official_price = mdata[0].official_price;
-        work.regist_date = mdata[0].regist_date.slice(0, 10);
-        // work.rate_count_detail = mdata[0].rate_count_detail;
-        work.genres = mdata[0].genres ? JSON.stringify(mdata[0].genres) : null
-        work.maker_name = mdata[0].maker_name
-        work.va = mdata[0].creaters.voice_by ? JSON.stringify(mdata[0].creaters.voice_by) : null
+        work.imageUrl = cnResponse[0].image_main.url ? cnResponse[0].image_main.url : cnResponse[0].image_thum.url
 
-        work.imageUrl = mdata[0].image_main.url ? mdata[0].image_main.url : mdata[0].image_thum.url
-
-        if (mdata[0].options) {
-            if (mdata[0].options.match(/\bCHI_HANS\b/) || mdata[0].options.match(/\bCHI_HANT\b/)) {
+        if (cnResponse[0].options) {
+            if (cnResponse[0].options.match(/\bCHI_HANS\b/) || cnResponse[0].options.match(/\bCHI_HANT\b/)) {
                 work.has_subtitle = true
             }
             else {
@@ -87,10 +59,11 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
         else {
             work.has_subtitle = false
         }
+        
         resolve(work)
     })
     .catch(err => {
-        reject(`Get work metadata failed on ${rjcode} with error message: ${err.messasge}.`)
+        reject(`Get work metadata failed on ${rjcode} with error message: ${err.stack}.`)
     })
 })
 
@@ -141,7 +114,7 @@ const scGetImg = (rjcode, imgUrl) => new Promise((resolve, reject) => {
     const parsedUrl = new URL(fullUrl)
     const imgName = path.basename(parsedUrl.pathname)
     imgPath = config.img_folder
-    // `${imgPath}${rjcode}_img_main.jpg`
+
     if (fs.existsSync(path.join(imgPath, imgName))) {
         console.log(`${imgName} already exists`);
         resolve({
@@ -196,5 +169,4 @@ module.exports = {
     scGetSaledata,
     scGetImg,
     scWorkAllData,
-    // redirectedGetMetadata
 }

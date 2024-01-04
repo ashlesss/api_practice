@@ -37,7 +37,8 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
         rate_count: work.rate_count,
         rate_average_2dp: work.rate_average_2dp,
         rate_count_detail: work.rate_count_detail,
-        has_subtitle: work.has_subtitle
+        has_subtitle: work.has_subtitle,
+        language_editions: work.language_editions
     })
     .onConflict().ignore()
     .then(() => {
@@ -54,7 +55,7 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
                         id: genres[i].id,
                         tag_name: genres[i].name,
                         en_us: processdGenres(work.enGenres, genres[i]),
-                        ja_jp: processdGenres(work.jpGenres, genres[i]),
+                        ja_jp: genres[i].name_base,
                         zh_cn: genres[i].name
                     })
                     .onConflict().ignore()

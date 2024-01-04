@@ -6,6 +6,7 @@ const { addUser } = require('./users')
 const { db } = require('./metadata')
 
 const databaseExists = fs.existsSync(path.join(config.db_path, 'ys.sqlite3'))
+const imageFolderExists = fs.existsSync(config.img_folder)
 
 async function initApp() {
     function initDatabaseDir() {
@@ -20,10 +21,25 @@ async function initApp() {
         }
     }
 
+    function initImageDir() {
+        const imageFolderDir = config.img_folder
+        if (!fs.existsSync(imageFolderDir)) {
+            try {
+                fs.mkdirSync(imageFolderDir, { recursive: true });
+                console.log('[Initializing] Image folder created.');
+            }
+            catch(err) {
+                console.error(`Creating image folder error ${err.message}`);
+            }
+        }
+    }
+
     async function runMigrations() {
         await db.migrate.latest()
     }
 
+
+    // init database
     if (!databaseExists) {
         initDatabaseDir()
         await createSchema()
@@ -42,6 +58,14 @@ async function initApp() {
     }
     else {
         await runMigrations()
+    }
+
+    // Init image folder
+    if (!imageFolderExists) {
+        initImageDir()
+    }
+    else {
+        console.log('[Initializing] Image folder exists.');
     }
 }
 
