@@ -1,24 +1,28 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
-## 1/4/2023
+## 1/5/2024
+
+1. Calculate work counts using the values returned by database.
+
+## 1/4/2024
 
 1. Optimize work's metadata requests.
 2. Add search support for plain RJ code
 3. When searching RJ code, it now will show the relevant translated works. 
 4. Add `language_editions` metadata to database.
 
-## 1/3/2023
+## 1/3/2024
 
 1. Refactor search features.
 
-## 1/2/2023
+## 1/2/2024
 
 1. Fix regex return incorrect RJ code on scanning local RJ folders.
 2. Add multi languages genres to database
 3. Remove `redirectWork`.
 4. Create new view table for work queries.
 
-## 1/1/2023
+## 1/1/2024
 
 1. Fix bugs on updating work's tracks.
 2. Adding update work's tracks status to websocket.

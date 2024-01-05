@@ -12,6 +12,7 @@ const formatResult = (result) => {
             result[i]['rate_count_detail'] = JSON.parse(result[i].rate_count_detail)
             result[i]['vas'] = JSON.parse(result[i].vas)
             result[i]['tags'] = JSON.parse(result[i].tags)
+            result[i]['language_editions'] = JSON.parse(result[i].language_editions)
             formattedResult.push(result[i])
         }
         return formattedResult

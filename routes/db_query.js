@@ -76,62 +76,50 @@ router.get('/works',
  * Handle keyword search.
  */
 router.get('/search/:keyword', 
-    query('page').optional({values: null}).isInt(),
-    query('order').optional({values: null}).isIn(['alt_rj_code', 
-    'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw', 
-    'rate_average_2dp', 'random']),
-    query('sort').optional({values: null}).isIn(['asc', 'desc']),
-    query('subtitle').optional({values: null}).isInt(),
-    (req, res) => {
-        if (!validate(req, res)) return 
+query('page').optional({values: null}).isInt(),
+query('order').optional({values: null}).isIn(['alt_rj_code', 
+'regist_date', 'dl_count', 'rate_count', 'official_price', 'nsfw', 
+'rate_average_2dp', 'random']),
+query('sort').optional({values: null}).isIn(['asc', 'desc']),
+query('subtitle').optional({values: null}).isInt(),
+(req, res) => {
+    if (!validate(req, res)) return 
 
-        const order = req.query.order || 'alt_rj_code'
-        const sort = req.query.sort || 'asc'
-        const subtitle = Number(req.query.subtitle) || 0
-        const page = Number(req.query.page) || 1
-        ysdb.getWorkByKeyword(req.params.keyword, order, sort, subtitle)
-        .then(result => {
-            if (typeof(result) !== 'undefined') {
-                // const page = Number(req.query.page) || 1
-                const totalWorks = result.length
-                const totalPage = Math.ceil(totalWorks / Number(config.worksPerPage));
-                const offset = (page - 1) * config.worksPerPage
+    const order = req.query.order || 'alt_rj_code'
+    const sort = req.query.sort || 'asc'
+    const subtitle = Number(req.query.subtitle) || 0
+    const page = Number(req.query.page) || 1
 
-                pagedResult = result.slice(offset, (offset + config.worksPerPage))
-                const formattedResult = formatResult(pagedResult)
-                res.status(200).json({
-                    pagination: {
-                        current_page: page,
-                        max_page: totalPage,
-                        total_works: totalWorks
-                    },
-                    works: formattedResult
-                })
-            }
-            else {
-                res.status(200).json({
-                    invalid: 'invalid',
-                    pagination: {
-                        current_page: page,
-                        max_page: 0,
-                        total_works: 0
-                    },
-                    works: []
-                })
-            }
+    ysdb.getWorkByKeyword(req.params.keyword, order, sort, subtitle, page)
+    .then(result => {
+        ysdb.getWorkByKeywordCountWorks(req.params.keyword, order, sort, subtitle)
+        .then(counts => {
+            const totalWorks = counts[0].count
+            const totalPage = Math.ceil(totalWorks / Number(config.worksPerPage));
+            const formattedResult = formatResult(result)
+            
+            res.status(200).json({
+                pagination: {
+                    current_page: page,
+                    max_page: totalPage,
+                    total_works: totalWorks
+                },
+                works: formattedResult
+            })
         })
-        .catch(err => {
-            if (err.message) {
-                const msg = {
-                    error: err,
-                    error_message: err.message
-                }
-                res.status(404).json(msg)
+    })
+    .catch(err => {
+        if (err.message) {
+            const msg = {
+                error: err,
+                error_message: err.message
             }
-            else {
-                res.status(404).json(err)
-            }
-        })
+            res.status(404).json(msg)
+        }
+        else {
+            res.status(404).json(err)
+        }
+    })
 })
 
 router.get('/tracks/:id', (req, res) => {
