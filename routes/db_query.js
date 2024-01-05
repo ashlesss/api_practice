@@ -13,7 +13,7 @@ const { db } = require('../database/metadata')
 router.get('/work/:id', (req, res) => {
     const id = req.params.id
     if (isNaN(Number(id))) {
-        db('works_w_metadata')
+        db('works_w_metadata_public')
         .select('*')
         .where({rj_code: id})
         .then(work => {

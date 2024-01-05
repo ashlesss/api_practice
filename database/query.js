@@ -236,6 +236,14 @@ function sortBySubtitle(subtitle, needAND) {
             return ''
         }
     }
+    else {
+        if (subtitle === 1) {
+            return `WHERE has_subtitle = 1`
+        }
+        else {
+            return ''
+        }
+    }
     
 }
 
