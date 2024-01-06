@@ -1,6 +1,11 @@
 const { db } = require('./metadata')
 
-const createSchema = () => db.schema.createTable('ys', tbl => {
+const createSchema = () => db.schema
+.createTable('t_circle', tbl => {
+    tbl.integer('id').primary()
+    tbl.string('circle_name').notNullable()
+})
+.createTable('ys', tbl => {
     tbl.string('rj_code').notNullable()
     tbl.integer('alt_rj_code').notNullable()
     tbl.string('work_title').notNullable()
@@ -19,7 +24,6 @@ const createSchema = () => db.schema.createTable('ys', tbl => {
     tbl.text('language_editions')
     tbl.timestamps(true, true)
 
-    tbl.foreign('circle_id').references('id').inTable('t_circle')
     tbl.primary('rj_code')
 })
 .createTable('t_tag_id', tbl => {
@@ -37,10 +41,6 @@ const createSchema = () => db.schema.createTable('ys', tbl => {
     tbl.foreign('tag_rjcode').references('rj_code').inTable('ys')
     tbl.primary(['tag_id', 'tag_rjcode'])
 })
-.createTable('t_circle', tbl => {
-    tbl.integer('id')
-    tbl.string('circle_name').notNullable().primary()
-})
 .createTable('t_va_id', tbl => {
     tbl.integer('id').primary()
     tbl.string('va_name').notNullable()
@@ -55,8 +55,8 @@ const createSchema = () => db.schema.createTable('ys', tbl => {
 })
 .createTable('t_user', tbl => {
     tbl.increments('userId').primary()
-    tbl.text('username', 128).notNullable().unique().index()
-    tbl.text('password', 255).notNullable()
+    tbl.string('username', 128).notNullable().unique()
+    tbl.string('password', 255).notNullable()
     tbl.text('group').notNullable()
 })
 .createTable('t_tracks', tbl => {
@@ -65,90 +65,314 @@ const createSchema = () => db.schema.createTable('ys', tbl => {
 
     tbl.foreign('track_rjcode').references('rj_code').inTable('ys').onDelete('CASCADE')
 })
+// works_w_metadata
 .raw(`
-CREATE VIEW IF NOT EXISTS works_w_metadata
+CREATE OR REPLACE VIEW works_w_metadata
 AS
-SELECT baseQueryWithVA.*,
-       JSON_OBJECT('tags', JSON_ARRAYAGG(JSON_OBJECT('tag_id', t_tag_id.id, 'i18n', JSON_OBJECT('en_us', t_tag_id.en_us, 'ja_jp', t_tag_id.ja_jp, 'zh_cn', t_tag_id.zh_cn), 'tag_name', t_tag_id.tag_name))) AS tags
-FROM (
-    SELECT baseQuery.*,
-           JSON_OBJECT('vas', JSON_ARRAYAGG(JSON_OBJECT('va_id', t_va_id.id, 'va_name', t_va_id.va_name))) AS vas,
-           t_tracks.tracks AS tracks
-    FROM (
-        SELECT ys.rj_code,
-               ys.alt_rj_code,
-               ys.work_title,
-               ys.userset_rootdir,
-               ys.work_dir,
-               ys.work_main_img,
-               ys.circle_id,
-               t_circle.circle_name,
-               JSON_OBJECT('circle_id', ys.circle_id, 'circle_name', t_circle.circle_name) AS circleObj,
-               ys.nsfw,
-               ys.official_price,
-               ys.dl_count,
-               ys.regist_date,
-               ys.rate_count,
-               ys.rate_average_2dp,
-               ys.rate_count_detail,
-               ys.has_subtitle,
-               ys.language_editions
-        FROM ys
-        JOIN t_circle ON t_circle.id = ys.circle_id
-    ) AS baseQuery
-    LEFT JOIN t_va ON t_va.va_rjcode = baseQuery.rj_code
-    LEFT JOIN t_va_id ON t_va_id.id = t_va.va_id
-    LEFT JOIN t_tracks ON t_tracks.track_rjcode = baseQuery.rj_code
-    GROUP BY baseQuery.rj_code
-) AS baseQueryWithVA
-LEFT JOIN t_tag ON t_tag.tag_rjcode = baseQueryWithVA.rj_code
-LEFT JOIN t_tag_id ON t_tag_id.id = t_tag.tag_id
-GROUP BY baseQueryWithVA.rj_code;
+SELECT
+	basequerywithva.rj_code,
+	basequerywithva.alt_rj_code,
+	basequerywithva.work_title,
+	basequerywithva.userset_rootdir,
+	basequerywithva.work_dir,
+	basequerywithva.work_main_img,
+	basequerywithva.circle_id,
+	basequerywithva.nsfw,
+	basequerywithva.official_price,
+	basequerywithva.dl_count,
+	basequerywithva.regist_date,
+	basequerywithva.rate_count,
+	basequerywithva.rate_average_2dp,
+	basequerywithva.rate_count_detail,
+	basequerywithva.has_subtitle,
+	basequerywithva.language_editions,
+	basequerywithva.created_at,
+	basequerywithva.updated_at,
+	basequerywithva.circleobj,
+	basequerywithva.vas,
+	basequerywithva.tracks,
+	jsonb_build_object (
+		'tags',
+		jsonb_agg (
+			jsonb_build_object (
+				'tag_id',
+				t_tag_id.ID,
+				'i18n',
+				jsonb_build_object ( 'en_us', t_tag_id.en_us, 'ja_jp', t_tag_id.ja_jp, 'zh_cn', t_tag_id.zh_cn ),
+				'tag_name',
+				t_tag_id.tag_name 
+			) 
+		) 
+	) AS tags 
+FROM
+	(
+	SELECT
+		basequery.rj_code,
+		basequery.alt_rj_code,
+		basequery.work_title,
+		basequery.userset_rootdir,
+		basequery.work_dir,
+		basequery.work_main_img,
+		basequery.circle_id,
+		basequery.nsfw,
+		basequery.official_price,
+		basequery.dl_count,
+		basequery.regist_date,
+		basequery.rate_count,
+		basequery.rate_average_2dp,
+		basequery.rate_count_detail,
+		basequery.has_subtitle,
+		basequery.language_editions,
+		basequery.created_at,
+		basequery.updated_at,
+		basequery.circleobj,
+		jsonb_build_object ( 'vas', jsonb_agg ( jsonb_build_object ( 'va_id', t_va_id.ID, 'va_name', t_va_id.va_name ) ) ) AS vas,
+		t_tracks.tracks 
+	FROM
+		(
+		SELECT
+			ys.rj_code,
+			ys.alt_rj_code,
+			ys.work_title,
+			ys.userset_rootdir,
+			ys.work_dir,
+			ys.work_main_img,
+			ys.circle_id,
+			ys.nsfw,
+			ys.official_price,
+			ys.dl_count,
+			ys.regist_date,
+			ys.rate_count,
+			ys.rate_average_2dp,
+			ys.rate_count_detail,
+			ys.has_subtitle,
+			ys.language_editions,
+			ys.created_at,
+			ys.updated_at,
+			jsonb_build_object ( 'circle_id', ys.circle_id, 'circle_name', t_circle.circle_name ) AS circleobj 
+		FROM
+			ys
+			JOIN t_circle ON t_circle.ID = ys.circle_id 
+		GROUP BY
+			ys.rj_code,
+			ys.alt_rj_code,
+			ys.work_title,
+			ys.userset_rootdir,
+			ys.work_dir,
+			ys.work_main_img,
+			ys.circle_id,
+			t_circle.circle_name,
+			ys.nsfw,
+			ys.official_price,
+			ys.dl_count,
+			ys.regist_date,
+			ys.rate_count,
+			ys.rate_average_2dp,
+			ys.rate_count_detail,
+			ys.has_subtitle,
+			ys.language_editions 
+		) basequery
+		LEFT JOIN t_va ON t_va.va_rjcode :: TEXT = basequery.rj_code ::
+		TEXT LEFT JOIN t_va_id ON t_va_id.ID = t_va.va_id
+		LEFT JOIN t_tracks ON t_tracks.track_rjcode :: TEXT = basequery.rj_code :: TEXT 
+	GROUP BY
+		basequery.rj_code,
+		basequery.alt_rj_code,
+		basequery.work_title,
+		basequery.userset_rootdir,
+		basequery.work_dir,
+		basequery.work_main_img,
+		basequery.circle_id,
+		basequery.nsfw,
+		basequery.official_price,
+		basequery.dl_count,
+		basequery.regist_date,
+		basequery.rate_count,
+		basequery.rate_average_2dp,
+		basequery.rate_count_detail,
+		basequery.has_subtitle,
+		basequery.language_editions,
+		basequery.created_at,
+		basequery.updated_at,
+		basequery.circleobj,
+		t_tracks.tracks 
+	) basequerywithva
+	LEFT JOIN t_tag ON t_tag.tag_rjcode :: TEXT = basequerywithva.rj_code ::
+	TEXT LEFT JOIN t_tag_id ON t_tag_id.ID = t_tag.tag_id 
+GROUP BY
+	basequerywithva.rj_code,
+	basequerywithva.alt_rj_code,
+	basequerywithva.work_title,
+	basequerywithva.userset_rootdir,
+	basequerywithva.work_dir,
+	basequerywithva.work_main_img,
+	basequerywithva.circle_id,
+	basequerywithva.nsfw,
+	basequerywithva.official_price,
+	basequerywithva.dl_count,
+	basequerywithva.regist_date,
+	basequerywithva.rate_count,
+	basequerywithva.rate_average_2dp,
+	basequerywithva.rate_count_detail,
+	basequerywithva.has_subtitle,
+	basequerywithva.language_editions,
+	basequerywithva.created_at,
+	basequerywithva.updated_at,
+	basequerywithva.circleobj,
+	basequerywithva.vas,
+	basequerywithva.tracks 
+ORDER BY
+	basequerywithva.alt_rj_code
+
 `)
+// works_w_metadata_public 
 .raw(
     `
-    CREATE VIEW IF NOT EXISTS works_w_metadata_public
+    CREATE OR REPLACE VIEW works_w_metadata_public
     AS
-    SELECT baseQueryWithVA.*,
-    JSON_OBJECT('tags', JSON_ARRAYAGG(JSON_OBJECT('tag_id', t_tag_id.id, 'i18n', JSON_OBJECT('en_us', t_tag_id.en_us, 'ja_jp', t_tag_id.ja_jp, 'zh_cn', t_tag_id.zh_cn), 'tag_name', t_tag_id.tag_name))) AS tags
-FROM (
-    SELECT baseQuery.*,
-        JSON_OBJECT('vas', JSON_ARRAYAGG(json_object('va_id', t_va_id.id, 'va_name', t_va_id.va_name))) AS vas
-    FROM (
-        SELECT ys.rj_code,
-            ys.alt_rj_code,
-            ys.work_title,
-            ys.work_main_img,
-            ys.circle_id,
-            t_circle.circle_name,
-            JSON_OBJECT('circle_id', ys.circle_id, 'circle_name', t_circle.circle_name) AS circleObj,
-            ys.nsfw,
-            ys.official_price,
-            ys.dl_count,
-            ys.regist_date,
-            ys.rate_count,
-            ys.rate_average_2dp,
-            ys.rate_count_detail,
-            ys.has_subtitle,
-            ys.language_editions
-        FROM ys
-        JOIN t_circle ON t_circle.id = ys.circle_id
-    ) AS baseQuery
-    LEFT JOIN t_va ON t_va.va_rjcode = baseQuery.rj_code
-    LEFT JOIN t_va_id ON t_va_id.id = t_va.va_id
-    GROUP BY baseQuery.rj_code
-) AS baseQueryWithVA
-LEFT JOIN t_tag ON t_tag.tag_rjcode = baseQueryWithVA.rj_code
-LEFT JOIN t_tag_id ON t_tag_id.id = t_tag.tag_id
-GROUP BY baseQueryWithVA.rj_code
+    SELECT
+	basequerywithva.rj_code,
+	basequerywithva.alt_rj_code,
+	basequerywithva.work_title,
+	basequerywithva.work_main_img,
+	basequerywithva.circle_id,
+	basequerywithva.nsfw,
+	basequerywithva.official_price,
+	basequerywithva.dl_count,
+	basequerywithva.regist_date,
+	basequerywithva.rate_count,
+	basequerywithva.rate_average_2dp,
+	basequerywithva.rate_count_detail,
+	basequerywithva.has_subtitle,
+	basequerywithva.language_editions,
+	basequerywithva.created_at,
+	basequerywithva.updated_at,
+	basequerywithva.circleobj,
+	basequerywithva.vas,
+	jsonb_build_object (
+		'tags',
+		jsonb_agg (
+			jsonb_build_object (
+				'tag_id',
+				t_tag_id.ID,
+				'i18n',
+				jsonb_build_object ( 'en_us', t_tag_id.en_us, 'ja_jp', t_tag_id.ja_jp, 'zh_cn', t_tag_id.zh_cn ),
+				'tag_name',
+				t_tag_id.tag_name 
+			) 
+		) 
+	) AS tags 
+FROM
+	(
+	SELECT
+		basequery.rj_code,
+		basequery.alt_rj_code,
+		basequery.work_title,
+		basequery.work_main_img,
+		basequery.circle_id,
+		basequery.nsfw,
+		basequery.official_price,
+		basequery.dl_count,
+		basequery.regist_date,
+		basequery.rate_count,
+		basequery.rate_average_2dp,
+		basequery.rate_count_detail,
+		basequery.has_subtitle,
+		basequery.language_editions,
+		basequery.created_at,
+		basequery.updated_at,
+		basequery.circleobj,
+		jsonb_build_object ( 'vas', jsonb_agg ( jsonb_build_object ( 'va_id', t_va_id.ID, 'va_name', t_va_id.va_name ) ) ) AS vas 
+	FROM
+		(
+		SELECT
+			ys.rj_code,
+			ys.alt_rj_code,
+			ys.work_title,
+			ys.work_main_img,
+			ys.circle_id,
+			ys.nsfw,
+			ys.official_price,
+			ys.dl_count,
+			ys.regist_date,
+			ys.rate_count,
+			ys.rate_average_2dp,
+			ys.rate_count_detail,
+			ys.has_subtitle,
+			ys.language_editions,
+			ys.created_at,
+			ys.updated_at,
+			jsonb_build_object ( 'circle_id', ys.circle_id, 'circle_name', t_circle.circle_name ) AS circleobj 
+		FROM
+			ys
+			JOIN t_circle ON t_circle.ID = ys.circle_id 
+		GROUP BY
+			ys.rj_code,
+			ys.alt_rj_code,
+			ys.work_title,
+			ys.work_main_img,
+			ys.circle_id,
+			t_circle.circle_name,
+			ys.nsfw,
+			ys.official_price,
+			ys.dl_count,
+			ys.regist_date,
+			ys.rate_count,
+			ys.rate_average_2dp,
+			ys.rate_count_detail,
+			ys.has_subtitle,
+			ys.language_editions 
+		) basequery
+		LEFT JOIN t_va ON t_va.va_rjcode :: TEXT = basequery.rj_code ::
+		TEXT LEFT JOIN t_va_id ON t_va_id.ID = t_va.va_id 
+	GROUP BY
+		basequery.rj_code,
+		basequery.alt_rj_code,
+		basequery.work_title,
+		basequery.work_main_img,
+		basequery.circle_id,
+		basequery.nsfw,
+		basequery.official_price,
+		basequery.dl_count,
+		basequery.regist_date,
+		basequery.rate_count,
+		basequery.rate_average_2dp,
+		basequery.rate_count_detail,
+		basequery.has_subtitle,
+		basequery.language_editions,
+		basequery.created_at,
+		basequery.updated_at,
+		basequery.circleobj 
+	) basequerywithva
+	LEFT JOIN t_tag ON t_tag.tag_rjcode :: TEXT = basequerywithva.rj_code ::
+	TEXT LEFT JOIN t_tag_id ON t_tag_id.ID = t_tag.tag_id 
+GROUP BY
+	basequerywithva.rj_code,
+	basequerywithva.alt_rj_code,
+	basequerywithva.work_title,
+	basequerywithva.work_main_img,
+	basequerywithva.circle_id,
+	basequerywithva.nsfw,
+	basequerywithva.official_price,
+	basequerywithva.dl_count,
+	basequerywithva.regist_date,
+	basequerywithva.rate_count,
+	basequerywithva.rate_average_2dp,
+	basequerywithva.rate_count_detail,
+	basequerywithva.has_subtitle,
+	basequerywithva.language_editions,
+	basequerywithva.created_at,
+	basequerywithva.updated_at,
+	basequerywithva.circleobj,
+	basequerywithva.vas
     `
 )
 .then(() => {
     console.log('Database schema created successful.');
 })
 .catch(err => {
-    if (err.toString().indexOf('table `ys` already exists') !== -1) {
-        console.log('Database schema already existed');
+    if (err.toString().indexOf('create table "t_circle"') !== -1) {
+        console.log('[Init database] Database schema already existed');
     }
     else {
         throw err

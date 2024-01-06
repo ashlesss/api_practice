@@ -16,8 +16,9 @@ module.exports = {
 function getFullRecord(work) {
     delete work.circleObj
     work['rate_count_detail'] = JSON.parse(work.rate_count_detail)
-    work['vas'] = JSON.parse(work.vas)
-    work['tags'] = JSON.parse(work.tags)
+    // work['vas'] = JSON.parse(work.vas)
+    // work['tags'] = JSON.parse(work.tags)
+    work['language_editions'] = JSON.parse(work.language_editions)
     return work
 }
 
@@ -53,14 +54,14 @@ async function getWorks(page, order, sort, subtitle) {
     const pagination = {
         current_page: page,
         max_page: totalPage,
-        total_works: totalWorks[0].count,
+        total_works: Number(totalWorks[0].count),
     }
 
-    // console.log(curWorks);
+    // console.log(curWorks.rows.length !== 0);
 
-    if (curWorks.length !== 0) {
-        for (let i = 0; i < curWorks.length; i++) {
-            works.push(getFullRecord(curWorks[i]))
+    if (curWorks.rows.length !== 0) {
+        for (let i = 0; i < curWorks.rows.length; i++) {
+            works.push(getFullRecord(curWorks.rows[i]))
         }
     }
 

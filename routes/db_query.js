@@ -136,6 +136,12 @@ router.get('/tracks/:id', (req, res) => {
 
         const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
         if (rootFolder) {
+            // Now since we store the tracks info in the database
+            if (!work.tracks) {
+                res.status(404).json({error: 'workTrackNotFound'})
+                return
+            }
+
             res.status(200).send(
                 toTree(JSON.parse(work.tracks), work.work_title, work.work_dir, rootFolder)
             )

@@ -80,7 +80,7 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
                 id: work.circle_id,
                 circle_name: work.maker_name
             })
-            .onConflict('circle_name').ignore()
+            .onConflict().ignore()
         )
 
 
@@ -110,11 +110,6 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
         }
 
         return Promise.all(promises)
-        .then(() => trx.commit())
-        .catch(err => {
-            console.error(err)
-            return trx.rollback()
-        })
     })
 )
 .then(async () => {
@@ -124,7 +119,8 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
     await db('t_tracks').insert({
         track_rjcode: work.workno,
         tracks: JSON.stringify(tracks)
-    });
+    })
+    .onConflict().ignore()
 })
 
 /**
@@ -147,6 +143,7 @@ const processdGenres = (targetGenres, compareGenres) => {
  * Fetching work's metadata, add work and its metadata into the data base.
  * @param {string} rjcode RJcode
  * @param {string} workdir work's directory
+ * @param {string} userSetRootDir user set root dir
  * @returns added if success or return err message
  */
 const getWorksData = (rjcode, workdir, userSetRootDir) => {
@@ -157,9 +154,9 @@ const getWorksData = (rjcode, workdir, userSetRootDir) => {
             // console.log(`${rjcode} has been added to db`);
             return 'added'
         })
-        .catch(err => {
-            return err.message
-        })
+        // .catch(err => {
+        //     return err.message
+        // })
     })
     .catch(err => {
         return err.message
@@ -225,7 +222,7 @@ const updateAllWorksDuration = () => {
     db('works_w_metadata')
     .select('rj_code', 'work_title', 'work_dir', 'userset_rootdir')
     .then(works => {
-        const limit = promiseLimit(config.maxParallelism ? config.maxParallelism : 16)
+        const limit = promiseLimit(config.maxParallelism ? config.maxParallelism : 2)
         const limitedGetWorkTrakcs = (rjcode, dir) => {
             return limit(() => getWorkTrack(rjcode, dir))
         }

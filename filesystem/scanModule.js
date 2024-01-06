@@ -114,12 +114,11 @@ const uniqueList = workList => {
    and Error message when failed.
  */
 const processFolder = folder => md.db('ys')
-.select('rj_code')
 .where({rj_code: folder.rjcode})
 .count({count: '*'})
 .first()
 .then(res => {
-    if (res.count === 0) {
+    if (res.count === '0') {
         return md.getWorksData(folder.rjcode, folder.name, folder.userSetRootDir)
         .then(result => {
             if (result === 'added') {

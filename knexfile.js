@@ -7,16 +7,25 @@ const path = require('node:path');
  */
 module.exports = {
 
+  // development: {
+  //   client: 'sqlite3',
+  //   connection: {
+  //     filename: path.join(config.db_path, 'ys.sqlite3'),
+  //   },
+  //   useNullAsDefault: true,
+  //   migrations: {
+  //     tableName: 'knex_migrations',
+  //   }
+  // },
+
   development: {
-    client: 'sqlite3',
+    client: 'pg',
     connection: {
-      filename: path.join(config.db_path, 'ys.sqlite3'),
+      database: 'ys',
+      user:     'me',
+      password: '12345678'
     },
-    useNullAsDefault: true,
-    migrations: {
-      tableName: 'knex_migrations',
-    }
-  },
+  }
 
   // staging: {
   //   client: 'postgresql',
