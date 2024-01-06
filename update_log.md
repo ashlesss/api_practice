@@ -1,5 +1,9 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/6/2024
+
+1. Change database to PostgreSQL.
+
 ## 1/5/2024
 
 1. Calculate work counts using the values returned by database.
