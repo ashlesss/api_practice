@@ -117,6 +117,7 @@ function splitKeywords(keywords) {
  * @param {string} order 
  * @param {string} sort 
  * @param {integer} subtitle 
+ * @param {integer} page 
  * @returns 
  */
 async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
@@ -127,7 +128,7 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
         const matchedRJCode = pAllTerms.plainKeywords.join(' ').match(/(RJ\d{6,8})|(\d{6,8})/i)
         if (matchedRJCode) {
             const firstQuery = await db('works_w_metadata_public')
-            .whereLike('rj_code', `%%${matchedRJCode[0]}`)
+            .whereLike('rj_code', `%${matchedRJCode[0]}%`)
             
             // Now search for language_editions
             if (firstQuery.length) {
@@ -240,7 +241,7 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
         const matchedRJCode = pAllTerms.plainKeywords.join(' ').match(/(RJ\d{6,8})|(\d{6,8})/i)
         if (matchedRJCode) {
             const firstQuery = await db('works_w_metadata_public')
-            .whereLike('rj_code', `%%${matchedRJCode[0]}`)
+            .whereLike('rj_code', `%${matchedRJCode[0]}%`)
             
             // Now search for language_editions
             if (firstQuery.length) {
@@ -255,7 +256,7 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
                         }
                     })
                     .orderByRaw(`${randomOrder(order)} ${sort}`)
-                    .count({ count: '*' })
+                    .count({ count: 'rj_code' })
                 }
                 else {
                     return [ { count: 1 } ]
@@ -339,7 +340,7 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
         }
     })
     .orderByRaw(`${randomOrder(order)} ${sort}`)
-    .count({ count: '*' })
+    .count({ count: 'rj_code' })
     
     return await query;
 }
