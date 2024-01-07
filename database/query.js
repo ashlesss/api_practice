@@ -44,7 +44,7 @@ async function getWorks(page, order, sort, subtitle) {
         OFFSET ${(page - 1) * worksPerPage}`
     )
     
-    const totalWorks = sortSub ? await db('works_w_metadata_public').where({has_subtitle: 1}).count({count: 'rj_code'}) 
+    const totalWorks = sortSub !== '' ? await db('works_w_metadata_public').whereRaw('has_subtitle = TRUE').count({count: 'rj_code'}) 
         : await db('works_w_metadata_public').count({count: 'rj_code'})
     const totalPage = Math.ceil(totalWorks[0].count / Number(worksPerPage));
 
@@ -130,6 +130,11 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
         if (matchedRJCode) {
             const firstQuery = await db('works_w_metadata_public')
             .whereLike('rj_code', `%${matchedRJCode[0]}%`)
+            .andWhere(function() {
+                if (subtitle === 1) {
+                    this.where('has_subtitle', '=', 'TRUE')
+                }
+            })
             
             // Now search for language_editions
             if (firstQuery.length) {
@@ -140,7 +145,7 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
                     .whereIn('rj_code', workArray)
                     .andWhere(function() {
                         if (subtitle === 1) {
-                            this.where('has_subtitle', '=', 1)
+                            this.where('has_subtitle', '=', 'TRUE')
                         }
                     })
                     .orderByRaw(`${randomOrder(order)} ${sort}`)
@@ -167,9 +172,9 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
         if (!acc.term.match(/(sell|price|rate)/i)) {
             query = query.where(function() {
                 this.whereLike('work_title', `%${acc.keyword}%`)
-                    .orWhereLike('tags', `%${acc.keyword}%`)
-                    .orWhereLike('circleObj', `%${acc.keyword}%`)
-                    .orWhereLike('vas', `%${acc.keyword}%`)
+                    .orWhereRaw(`tags::text LIKE '%${acc.keyword}%'`)
+                    .orWhereRaw(`circleObj::text LIKE '%${acc.keyword}%'`)
+                    .orWhereRaw(`vas::text LIKE '%${acc.keyword}%'`)
             });
         }
 
@@ -200,9 +205,9 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
     for (const keyword of pAllTerms.plainKeywords) {
         query = query.andWhere(function() {
             this.whereLike('work_title', `%${keyword}%`)
-                .orWhereLike('tags', `%${keyword}%`)
-                .orWhereLike('circleObj', `%${keyword}%`)
-                .orWhereLike('vas', `%${keyword}%`)
+            .orWhereRaw(`tags::text LIKE '%${keyword}%'`)
+            .orWhereRaw(`circleObj::text LIKE '%${keyword}%'`)
+            .orWhereRaw(`vas::text LIKE '%${keyword}%'`)
         });
     }
 
@@ -225,7 +230,7 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
     })
     .andWhere(function() {
         if (subtitle === 1) {
-            this.where('has_subtitle', '=', 1)
+            this.where('has_subtitle', '=', 'TRUE')
         }
     })
     .orderByRaw(`${randomOrder(order)} ${sort}`)
@@ -235,6 +240,14 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
     return await query;
 }
 
+/**
+ * 
+ * @param {*} allTerms 
+ * @param {*} order 
+ * @param {*} sort 
+ * @param {*} subtitle 
+ * @returns 
+ */
 async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
     let pAllTerms = parseKeywords(allTerms)
 
@@ -243,45 +256,54 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
         if (matchedRJCode) {
             const firstQuery = await db('works_w_metadata_public')
             .whereLike('rj_code', `%${matchedRJCode[0]}%`)
+            .andWhere(function() {
+                if (subtitle === 1) {
+                    this.where('has_subtitle', '=', 'TRUE')
+                }
+            })
             
             // Now search for language_editions
             if (firstQuery.length) {
                 const language_editions = JSON.parse(firstQuery[0].language_editions)
                 if (language_editions.length) {
                     const workArray  = JSON.parse(firstQuery[0].language_editions).map(e => e.workno)
-                    return await db('works_w_metadata_public')
+                    const query = db('works_w_metadata_public')
+                    .select('rj_code')
                     .whereIn('rj_code', workArray)
                     .andWhere(function() {
                         if (subtitle === 1) {
-                            this.where('has_subtitle', '=', 1)
+                            this.where('has_subtitle', '=', 'TRUE')
                         }
                     })
                     .orderByRaw(`${randomOrder(order)} ${sort}`)
-                    .count({ count: 'rj_code' })
+
+                    return await db('works_w_metadata_public')
+                    .where('rj_code', 'in', query)
+                    .count('rj_code')
                 }
                 else {
-                    return [ { count: 1 } ]
+                    return [ { count: '1' } ]
                 }
             }
-            return [ { count: 0 } ]
+            return [ { count: '0' } ]
         }
     }
 
     // If plainKeywords have RJ code in it, after call for search rj code then 
     // RJ code search expired, it shoudn't continue to check for other keywords.
 
-    let query = db('works_w_metadata_public');
-    let price = -1
+    let query = db('works_w_metadata_public').select('rj_code')
     let rate = -1
     let sell = -1
+    let price = -1
 
     for (const acc of pAllTerms.accurateSearchTerms) {
         if (!acc.term.match(/(sell|price|rate)/i)) {
             query = query.where(function() {
                 this.whereLike('work_title', `%${acc.keyword}%`)
-                    .orWhereLike('tags', `%${acc.keyword}%`)
-                    .orWhereLike('circleObj', `%${acc.keyword}%`)
-                    .orWhereLike('vas', `%${acc.keyword}%`)
+                .orWhereRaw(`tags::text LIKE '%${acc.keyword}%'`)
+                .orWhereRaw(`circleObj::text LIKE '%${acc.keyword}%'`)
+                .orWhereRaw(`vas::text LIKE '%${acc.keyword}%'`)
             });
         }
 
@@ -312,9 +334,9 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
     for (const keyword of pAllTerms.plainKeywords) {
         query = query.andWhere(function() {
             this.whereLike('work_title', `%${keyword}%`)
-                .orWhereLike('tags', `%${keyword}%`)
-                .orWhereLike('circleObj', `%${keyword}%`)
-                .orWhereLike('vas', `%${keyword}%`)
+            .orWhereRaw(`tags::text LIKE '%${keyword}%'`)
+            .orWhereRaw(`circleObj::text LIKE '%${keyword}%'`)
+            .orWhereRaw(`vas::text LIKE '%${keyword}%'`)
         });
     }
 
@@ -337,13 +359,14 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
     })
     .andWhere(function() {
         if (subtitle === 1) {
-            this.where('has_subtitle', '=', 1)
+            this.where('has_subtitle', '=', 'TRUE')
         }
     })
     .orderByRaw(`${randomOrder(order)} ${sort}`)
-    .count({ count: 'rj_code' })
-    
-    return await query;
+
+    return await db('works_w_metadata_public')
+    .where('rj_code', 'in', query)
+    .count('rj_code')
 }
 
 /**
@@ -355,7 +378,7 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
 function sortBySubtitle(subtitle, needAND) {
     if (needAND === 1) {
         if (subtitle === 1) {
-            return `AND has_subtitle = 1`
+            return `AND has_subtitle = TRUE`
         }
         else {
             return ''
@@ -363,7 +386,7 @@ function sortBySubtitle(subtitle, needAND) {
     }
     else {
         if (subtitle === 1) {
-            return `WHERE has_subtitle = 1`
+            return `WHERE has_subtitle = TRUE`
         }
         else {
             return ''

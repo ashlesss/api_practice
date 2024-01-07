@@ -1,5 +1,10 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/7/2024
+
+1. Adopt database changes to routes.
+2. Transit sqlite3 query standards to postgresql query standards.(not complete)
+
 ## 1/6/2024
 
 1. Change database to PostgreSQL.

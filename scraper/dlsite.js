@@ -48,13 +48,17 @@ const scGetMetadata = rjcode => new Promise((resolve, reject) => {
 
         work.imageUrl = cnResponse[0].image_main.url ? cnResponse[0].image_main.url : cnResponse[0].image_thum.url
 
-        if (cnResponse[0].options) {
-            if (cnResponse[0].options.match(/\bCHI_HANS\b/) || cnResponse[0].options.match(/\bCHI_HANT\b/)) {
-                work.has_subtitle = true
+        if (cnResponse[0].language_editions.length) {
+            // has_subtitle is false at start, stop this until becomes true
+            work.has_subtitle = false
+            for (let i = 0; i < cnResponse[0].language_editions.length; i++) {
+                if (cnResponse[0].language_editions[i].label.match(/簡体中文/) 
+                || cnResponse[0].language_editions[i].label.match(/繁体中文/)) {
+                    work.has_subtitle = true
+                    break;
+                }
             }
-            else {
-                work.has_subtitle = false
-            }
+            
         }
         else {
             work.has_subtitle = false

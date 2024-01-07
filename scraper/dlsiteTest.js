@@ -1,7 +1,7 @@
 //cSpell:disable
-const dl = require('./dlsite')
+// const dl = require('./dlsite')
 
-// dl.scGetMetadata('RJ01016317')
+// dl.scGetMetadata('RJ01045931')
 // .then(res => {
 //     console.log(res);
 // })

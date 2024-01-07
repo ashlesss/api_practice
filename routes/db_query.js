@@ -92,9 +92,10 @@ query('subtitle').optional({values: null}).isInt(),
 
     ysdb.getWorkByKeyword(req.params.keyword, order, sort, subtitle, page)
     .then(result => {
+        // console.log(result);
         ysdb.getWorkByKeywordCountWorks(req.params.keyword, order, sort, subtitle)
         .then(counts => {
-            const totalWorks = counts[0].count
+            const totalWorks = Number(counts[0].count)
             const totalPage = Math.ceil(totalWorks / Number(config.worksPerPage));
             const formattedResult = formatResult(result)
             
