@@ -59,12 +59,6 @@ const createSchema = () => db.schema
     tbl.string('password', 255).notNullable()
     tbl.text('group').notNullable()
 })
-.createTable('t_tracks', tbl => {
-    tbl.string('track_rjcode')
-    tbl.text('tracks').notNullable()
-
-    tbl.foreign('track_rjcode').references('rj_code').inTable('ys').onDelete('CASCADE')
-})
 // works_w_metadata
 .raw(`
 CREATE OR REPLACE VIEW works_w_metadata
@@ -90,7 +84,6 @@ SELECT
 	basequerywithva.updated_at,
 	basequerywithva.circleobj,
 	basequerywithva.vas,
-	basequerywithva.tracks,
 	jsonb_build_object (
 		'tags',
 		jsonb_agg (
@@ -126,8 +119,7 @@ FROM
 		basequery.created_at,
 		basequery.updated_at,
 		basequery.circleobj,
-		jsonb_build_object ( 'vas', jsonb_agg ( jsonb_build_object ( 'va_id', t_va_id.ID, 'va_name', t_va_id.va_name ) ) ) AS vas,
-		t_tracks.tracks 
+		jsonb_build_object ( 'vas', jsonb_agg ( jsonb_build_object ( 'va_id', t_va_id.ID, 'va_name', t_va_id.va_name ) ) ) AS vas
 	FROM
 		(
 		SELECT
@@ -174,7 +166,6 @@ FROM
 		) basequery
 		LEFT JOIN t_va ON t_va.va_rjcode :: TEXT = basequery.rj_code ::
 		TEXT LEFT JOIN t_va_id ON t_va_id.ID = t_va.va_id
-		LEFT JOIN t_tracks ON t_tracks.track_rjcode :: TEXT = basequery.rj_code :: TEXT 
 	GROUP BY
 		basequery.rj_code,
 		basequery.alt_rj_code,
@@ -194,8 +185,7 @@ FROM
 		basequery.language_editions,
 		basequery.created_at,
 		basequery.updated_at,
-		basequery.circleobj,
-		t_tracks.tracks 
+		basequery.circleobj
 	) basequerywithva
 	LEFT JOIN t_tag ON t_tag.tag_rjcode :: TEXT = basequerywithva.rj_code ::
 	TEXT LEFT JOIN t_tag_id ON t_tag_id.ID = t_tag.tag_id 
@@ -219,8 +209,7 @@ GROUP BY
 	basequerywithva.created_at,
 	basequerywithva.updated_at,
 	basequerywithva.circleobj,
-	basequerywithva.vas,
-	basequerywithva.tracks 
+	basequerywithva.vas
 ORDER BY
 	basequerywithva.alt_rj_code
 

@@ -5,10 +5,6 @@ const knex = require('knex')
 const Config = require('../knexfile')['development']
 const db = knex(Config)
 const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
-const { getWorkTrack } = require('../filesystem/utils')
-const path = require('node:path');
-const promiseLimit = require('promise-limit')
-const { prcSend } = require('../filesystem/utils')
 
 /**
  * This method will not check for the duplicate rjcode.
@@ -112,16 +108,6 @@ const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx =>
         return Promise.all(promises)
     })
 )
-.then(async () => {
-    const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === userSetRootDir);
-    const tracks = await getWorkTrack(work.workno, path.join(rootFolder.path, workdir));
-    
-    await db('t_tracks').insert({
-        track_rjcode: work.workno,
-        tracks: JSON.stringify(tracks)
-    })
-    .onConflict().ignore()
-})
 
 /**
  * Process mutli languages genres compare target genres their genres id
@@ -214,80 +200,11 @@ const updateWorkDir = (rjcode, newDir) => db.transaction(trx =>
     .where({rj_code: rjcode})
 )
 
-/**
- * Update all the work's tracks info.
- * Ready for process.fork()
- */
-const updateAllWorksDuration = () => {
-    db('works_w_metadata')
-    .select('rj_code', 'work_title', 'work_dir', 'userset_rootdir')
-    .then(works => {
-        const limit = promiseLimit(config.maxParallelism ? config.maxParallelism : 2)
-        const limitedGetWorkTrakcs = (rjcode, dir) => {
-            return limit(() => getWorkTrack(rjcode, dir))
-        }
-
-        let count = {
-            updated: 0,
-            failed: 0
-        }
-
-        let validWorks = []
-        // Remove works that are not belong to rootFolder
-        works.map(work => {
-            const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
-            if (rootFolder) {
-                validWorks.push(work)
-            }
-        })
-
-        const promises = validWorks.map(work => {
-            const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
-            return limitedGetWorkTrakcs(work.rj_code, path.join(rootFolder.path, work.work_dir))
-            .then(result => {
-                if (result !== 'failed') {
-                    prcSend(`${work.rj_code} tracks updated.`)
-                    count.updated++
-                }
-                else {
-                    prcSend(`${work.rj_code} tracks update failed.`)
-                    count.failed++
-                }
-            })
-        })
-
-        return Promise.all(promises)
-        .then(() => {
-            const msg = `Updating tracks completed: updated: ${count.updated}\n`
-            + `failed: ${count.failed}.`
-            prcSend({status: 'UPDATE_TRACKS_COMPLETED', message: msg})
-
-            process.exit(0)
-        })
-        .catch(err => {
-            if (err.code === 'ENOENT') {
-                prcSend(`Error code: "${err.code}", on path: "${err.path}". `
-                + `Check the path if the path exists in your system or not.`)
-            }
-            else {
-                prcSend('Updating tracks error')
-            }
-
-            process.exit(1)
-        }) 
-    })
-    .catch(err => {
-        prcSend(`Updating tracks error when querying on database, err: ${err.stack}`)
-        process.exit(1)
-    })
-}
-
 module.exports = {
     getWorksData,
     updateSaledata,
     updateWorkSaledata,
     db,
     updateWorkDir,
-    updateAllWorksDuration,
     insertWorkTodb
 };

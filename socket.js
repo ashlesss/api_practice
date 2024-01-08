@@ -79,20 +79,6 @@ const socketOperations = socket => {
         }
     })
 
-    socket.on("update", res => {
-        if (res === 'START_UPDATE_TRACKS') {
-            tracksUpdater = child_process.fork('./database/updateTracks.js')
-            tracksUpdater.on('message', msg => {
-                if (msg.status) {
-                    socket.emit('update_tracks_completed', msg.message)
-                }
-                else {
-                    socket.emit('progress', msg)
-                }
-            })
-        }
-    })
-
     socket.on('disconnect', reason => {
         console.log(`[socket.io] Connection to client was disconnected, reason: ${reason}`);
     })

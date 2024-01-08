@@ -1,5 +1,10 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/8/2024
+
+1. Go back to scan media files' duration when requesting tracks. 
+2. If subtitle file is empty, no longer returning `noContent`, return `0` for its duration value directly.
+
 ## 1/7/2024
 
 1. Adopt database changes to routes.

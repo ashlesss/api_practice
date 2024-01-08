@@ -250,7 +250,7 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         let fatherFolder = tree;
         const paths = track.fileDirName ? track.fileDirName.split('/') : [];
         paths.forEach(ifolderDirName => {
-        fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.folderDirName === ifolderDirName).children;
+            fatherFolder = fatherFolder.find(item => item.type === 'folder' && item.folderDirName === ifolderDirName).children;
         });
     
         // Path controlled by config.offloadMedia, config.offloadStreamPath and config.offloadDownloadPath
@@ -264,8 +264,8 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         let offloadStreamUrl = joinFragments(config.offloadStreamPath, rootFolder.name, workDir, track.fileDirName || '', track.fileName);
         let offloadDownloadUrl = joinFragments(config.offloadDownloadPath, rootFolder.name, workDir, track.fileDirName || '', track.fileName);
         if (process.platform === 'win32') {
-        offloadStreamUrl = offloadStreamUrl.replace(/\\/g, '/');
-        offloadDownloadUrl = offloadDownloadUrl.replace(/\\/g, '/');
+            offloadStreamUrl = offloadStreamUrl.replace(/\\/g, '/');
+            offloadDownloadUrl = offloadDownloadUrl.replace(/\\/g, '/');
         }
     
         const textBaseUrl = '/api/media/stream/'
@@ -320,6 +320,29 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
                 mediaStreamUrl,
                 mediaDownloadUrl
             });
+        }
+        else if (track.ext === '.mp4') {
+            if (track.duration) {
+                fatherFolder.push({
+                    type: 'video',
+                    hash: track.hash,
+                    title: track.fileName,
+                    workTitle,
+                    mediaStreamUrl,
+                    mediaDownloadUrl,
+                    duration: track.duration
+                });
+            }
+            else {
+                fatherFolder.push({
+                    type: 'video',
+                    hash: track.hash,
+                    title: track.fileName,
+                    workTitle,
+                    mediaStreamUrl,
+                    mediaDownloadUrl,
+                });
+            }
         }
         else {
             if (track.duration) {
@@ -393,7 +416,7 @@ async function getLrcDuration(lrcPath) {
         const content = await fs.readFile(lrcPath, 'utf-8');
         const captions = subsrt.parse(content, { format: 'lrc'});
         if (captions.length === 0) {
-            return 'noContent'
+            return 0
         }
         else {
             const data = captions.filter(caption => {
@@ -402,7 +425,7 @@ async function getLrcDuration(lrcPath) {
                 }
             })
             if (data.length === 0) {
-                return 'noContent'
+                return 0
             }
             else {
                 return (data[data.length - 1].end) / 1000
@@ -422,7 +445,7 @@ async function getVttDuration(VttPath) {
         const parser = new WebVTTParser ();
         const parsed = parser.parse(content);
         if (parsed.cues.length === 0) {
-            return 'noContent'
+            return 0
         }
         else {
             return parsed.cues[parsed.cues.length - 1].endTime
@@ -439,7 +462,7 @@ async function getSrtDuration(srtPath) {
         const content = await fs.readFile(srtPath, 'utf-8')
         const parsed = vttParser.fromVtt(content);
         if (parsed.length === 0) {
-            return 'noContent'
+            return 0
         }
         else {
             const endTime = parsed[parsed.length - 1].endTime
@@ -468,7 +491,7 @@ async function getAssDuration(assPath) {
         const parsed = subsrt.parse(content, { format: 'ass' });
         const caption = parsed.filter(sub => sub.type === 'caption')
         if (caption.length === 0) {
-            return 'noContent'
+            return 0
         }
         else {
             const endTime = caption[caption.length - 1].end
