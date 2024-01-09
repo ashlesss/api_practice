@@ -124,8 +124,11 @@ query('subtitle').optional({values: null}).isInt(),
     })
 })
 
-router.get('/tracks/:id', (req, res) => {
+router.get('/tracks/:id', 
+query('video').optional({values: null}).isInt(), (req, res) => {
     // console.log(req.params.id);
+    const video = Number(req.query.video) || 0
+
     db('works_w_metadata')
     .select('work_title', 'work_dir', 'userset_rootdir')
     .where('rj_code', '=', req.params.id)
@@ -138,15 +141,28 @@ router.get('/tracks/:id', (req, res) => {
 
         const rootFolder = config.rootFolders.find(rootFolder => rootFolder.name === work.userset_rootdir);
         if (rootFolder) {
-            getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir))
-            .then(tracks => {
-                res.status(200).send(
-                    toTree(tracks, work.work_title, work.work_dir, rootFolder)
-                )
-            })
-            .catch(() => {
-                res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'})
-            })
+            if (video === 0) {
+                getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir))
+                .then(tracks => {
+                    res.status(200).send(
+                        toTree(tracks, work.work_title, work.work_dir, rootFolder)
+                    )
+                })
+                .catch(() => {
+                    res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'})
+                })
+            }
+            else {
+                getWorkTrack(req.params.id, path.join(rootFolder.path, work.work_dir), false)
+                .then(tracks => {
+                    res.status(200).send(
+                        toTree(tracks, work.work_title, work.work_dir, rootFolder)
+                    )
+                })
+                .catch(() => {
+                    res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'})
+                })
+            }
         }
         else {
             res.status(500).send({error: `Folder not found, Try restart server or rescan.`})
