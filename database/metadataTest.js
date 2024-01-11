@@ -3,6 +3,11 @@ const md = require('./metadata')
 
 // md.updateAllWorksDuration()
 
+// md.insertMediaDuration('RJ164850', '123.mp3', 1234, '12345')
+// .then(res => {
+//     console.log(res);
+// })
+
 
 // md.getWorksData('RJ343788', '/mnt/hgfs/test/2/')
 // .then(res => {

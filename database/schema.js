@@ -59,6 +59,18 @@ const createSchema = () => db.schema
     tbl.string('password', 255).notNullable()
     tbl.text('group').notNullable()
 })
+.createTable('t_track_duration', tbl => {
+	tbl.string('rj_code')
+	tbl.string('file_name')
+	tbl.float('duration')
+	tbl.string('mtime_ms')
+	tbl.text('file_path')
+
+	tbl.foreign('rj_code').references('rj_code').inTable('ys').onDelete('CASCADE')
+	tbl.primary([
+		'rj_code', 'file_path'
+	])
+})
 // works_w_metadata
 .raw(`
 CREATE OR REPLACE VIEW works_w_metadata

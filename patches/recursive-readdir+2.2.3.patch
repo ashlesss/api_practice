@@ -1,0 +1,17 @@
+diff --git a/node_modules/recursive-readdir/index.js b/node_modules/recursive-readdir/index.js
+index 23478d3..e0f3ce1 100644
+--- a/node_modules/recursive-readdir/index.js
++++ b/node_modules/recursive-readdir/index.js
+@@ -82,7 +82,11 @@ function readdir(path, ignores, callback) {
+             }
+           });
+         } else {
+-          list.push(filePath);
++          // list.push(filePath);
++          list.push({
++            path: filePath,
++            mtimeMs: stats.mtimeMs
++          });
+           pending -= 1;
+           if (!pending) {
+             return callback(null, list);

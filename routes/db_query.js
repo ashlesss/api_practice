@@ -148,7 +148,8 @@ query('video').optional({values: null}).isInt(), (req, res) => {
                         toTree(tracks, work.work_title, work.work_dir, rootFolder)
                     )
                 })
-                .catch(() => {
+                .catch((err) => {
+                    console.error(err)
                     res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'})
                 })
             }
@@ -159,7 +160,8 @@ query('video').optional({values: null}).isInt(), (req, res) => {
                         toTree(tracks, work.work_title, work.work_dir, rootFolder)
                     )
                 })
-                .catch(() => {
+                .catch((err) => {
+                    console.error(err);
                     res.status(500).send({error: 'Failed to get track list, Check if the files are existed on your device or rescan.'})
                 })
             }

@@ -1,5 +1,24 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/11/2024
+
+1. Store media files' duration to database dynamically when requested.
+2. Patch `recursive-readdir` package, it's now return array format as below:
+   ```
+   [
+    {
+        path: 'file1 absolute path',
+        mtimeMs: 'file1 modified date in millisecond'
+    },
+    {
+        path: 'file2 absolute path',
+        mtimeMs: 'file2 modified date in millisecond'
+    }
+    ...
+   ]
+   ```
+3. Categorize file types in `./filesystem/utils.js`. 
+
 ## 1/10/2024
 
 1. Change the order of accurate search and plain text search.

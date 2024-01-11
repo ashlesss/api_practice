@@ -1,6 +1,7 @@
 // Update with your config settings.
 const { config } = require('./config')
 const path = require('node:path');
+require('dotenv').config()
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
@@ -21,9 +22,9 @@ module.exports = {
   development: {
     client: 'pg',
     connection: {
-      database: 'ys',
-      user:     'me',
-      password: '12345678'
+      database: process.env.PG_DATABASE_NAME ?? 'ys',
+      user: process.env.PG_USER ?? 'me',
+      password: process.env.PG_PASSWORD ?? '12345678'
     },
   }
 

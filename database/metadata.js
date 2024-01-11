@@ -200,11 +200,36 @@ const updateWorkDir = (rjcode, newDir) => db.transaction(trx =>
     .where({rj_code: rjcode})
 )
 
+/**
+ * 
+ * @param {string} rjcode 
+ * @param {string} filename 
+ * @param {float} duration 
+ * @param {string} mtimeMs 
+ * @param {string} filepath 
+ * @returns 
+ */
+const insertMediaDuration = (rjcode, filename, duration, mtimeMs, filepath) => 
+db.transaction(trx => 
+    trx('t_track_duration')
+    .transacting(trx)
+    .insert({
+        rj_code: rjcode,
+        file_name: filename,
+        duration: duration,
+        mtime_ms: mtimeMs,
+        file_path: filepath
+    })
+    .onConflict(['rj_code', 'file_path'])
+    .merge()
+)
+
 module.exports = {
     getWorksData,
     updateSaledata,
     updateWorkSaledata,
     db,
     updateWorkDir,
-    insertWorkTodb
+    insertWorkTodb,
+    insertMediaDuration
 };
