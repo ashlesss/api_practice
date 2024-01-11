@@ -1,5 +1,9 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/10/2024
+
+1. Change the order of accurate search and plain text search.
+
 ## 1/8/2024
 
 1. Go back to scan media files' duration when requesting tracks. 

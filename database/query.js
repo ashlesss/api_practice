@@ -112,6 +112,8 @@ function splitKeywords(keywords) {
     })
 }
 
+// ----------------------------------------------------------------------
+
 /**
  * 
  * @param {string} allTerms Raw keywords
@@ -119,7 +121,7 @@ function splitKeywords(keywords) {
  * @param {string} sort 
  * @param {integer} subtitle 
  * @param {integer} page 
- * @returns 
+ * @returns Query result array
  */
 async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
     let pAllTerms = parseKeywords(allTerms)
@@ -138,9 +140,14 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
             
             // Now search for language_editions
             if (firstQuery.length) {
-                const language_editions = JSON.parse(firstQuery[0].language_editions)
+                let language_editions = JSON.parse(firstQuery[0].language_editions)
+                // console.log(language_editions);
                 if (language_editions.length) {
-                    const workArray  = JSON.parse(firstQuery[0].language_editions).map(e => e.workno)
+                    language_editions = language_editions.filter(e => e.workno !== firstQuery[0].rj_code)
+                    language_editions.unshift(
+                        {workno: firstQuery[0].rj_code}
+                    )
+                    const workArray  = language_editions.map(e => e.workno)
                     return await db('works_w_metadata_public')
                     .whereIn('rj_code', workArray)
                     .andWhere(function() {
@@ -168,14 +175,38 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
     let rate = -1
     let sell = -1
 
+    let termsFilteredArray = []
+    // for (const acc of pAllTerms.accurateSearchTerms) {
+    //     termsArray.push(acc.term)
+    // }
+
     for (const acc of pAllTerms.accurateSearchTerms) {
         if (!acc.term.match(/(sell|price|rate)/i)) {
-            query = query.where(function() {
-                this.whereLike('work_title', `%${acc.keyword}%`)
-                    .orWhereRaw(`tags::text LIKE '%${acc.keyword}%'`)
-                    .orWhereRaw(`circleObj::text LIKE '%${acc.keyword}%'`)
-                    .orWhereRaw(`vas::text LIKE '%${acc.keyword}%'`)
-            });
+            if (acc.term.toLowerCase() === 'tag') {
+                termsFilteredArray.push({
+                    term: 'tags',
+                    keyword: acc.keyword
+                })
+            }
+            else if (acc.term.toLowerCase() === 'circle') {
+                termsFilteredArray.push({
+                    term: 'circleobj',
+                    keyword: acc.keyword
+                })
+            }
+            else if (acc.term.toLowerCase() === 'va') {
+                termsFilteredArray.push({
+                    term: 'vas',
+                    keyword: acc.keyword
+                })
+            }
+            
+            // query = query.where(function() {
+            //     this.whereLike('work_title', `%${acc.keyword}%`)
+            //         .orWhereRaw(`tags::text LIKE '%${acc.keyword}%'`)
+            //         .orWhereRaw(`circleobj::text LIKE '%${acc.keyword}%'`)
+            //         .orWhereRaw(`vas::text LIKE '%${acc.keyword}%'`)
+            // });
         }
 
         switch (acc.term) {
@@ -201,12 +232,30 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
                 continue
         }
     }
+
+    // Query accurate search 
+    if (termsFilteredArray.length) {
+        // Base term search
+        query = query
+        .whereRaw(
+            `??::text LIKE ?`, 
+            [termsFilteredArray[0].term, `%${termsFilteredArray[0].keyword}%`]
+        )
+
+        // Search for all terms
+        termsFilteredArray.shift()
+        termsFilteredArray.forEach(e => {
+            console.log(e.term);
+            query = query.andWhereRaw(`??::text LIKE ?`, [e.term, `%${e.keyword}%`])
+        })
+    }
     
+    // Query plain text search
     for (const keyword of pAllTerms.plainKeywords) {
         query = query.andWhere(function() {
             this.whereLike('work_title', `%${keyword}%`)
             .orWhereRaw(`tags::text LIKE '%${keyword}%'`)
-            .orWhereRaw(`circleObj::text LIKE '%${keyword}%'`)
+            .orWhereRaw(`circleobj::text LIKE '%${keyword}%'`)
             .orWhereRaw(`vas::text LIKE '%${keyword}%'`)
         });
     }
@@ -240,13 +289,15 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
     return await query;
 }
 
+// -----------------------------------------------------------------------
+
 /**
  * 
- * @param {*} allTerms 
- * @param {*} order 
- * @param {*} sort 
- * @param {*} subtitle 
- * @returns 
+ * @param {string} allTerms 
+ * @param {string} order 
+ * @param {string} sort 
+ * @param {integer} subtitle 
+ * @returns Query result array
  */
 async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
     let pAllTerms = parseKeywords(allTerms)
@@ -264,9 +315,16 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
             
             // Now search for language_editions
             if (firstQuery.length) {
-                const language_editions = JSON.parse(firstQuery[0].language_editions)
+                let language_editions = JSON.parse(firstQuery[0].language_editions)
+                
                 if (language_editions.length) {
-                    const workArray  = JSON.parse(firstQuery[0].language_editions).map(e => e.workno)
+                    language_editions = language_editions
+                    .filter(e => e.workno !== firstQuery[0].rj_code)
+
+                    language_editions.unshift(
+                        {workno: firstQuery[0].rj_code}
+                    )
+                    const workArray  = language_editions.map(e => e.workno)
                     const query = db('works_w_metadata_public')
                     .select('rj_code')
                     .whereIn('rj_code', workArray)
@@ -297,14 +355,28 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
     let sell = -1
     let price = -1
 
+    let termsFilteredArray = []
+
     for (const acc of pAllTerms.accurateSearchTerms) {
         if (!acc.term.match(/(sell|price|rate)/i)) {
-            query = query.where(function() {
-                this.whereLike('work_title', `%${acc.keyword}%`)
-                .orWhereRaw(`tags::text LIKE '%${acc.keyword}%'`)
-                .orWhereRaw(`circleObj::text LIKE '%${acc.keyword}%'`)
-                .orWhereRaw(`vas::text LIKE '%${acc.keyword}%'`)
-            });
+            if (acc.term.toLowerCase() === 'tag') {
+                termsFilteredArray.push({
+                    term: 'tags',
+                    keyword: acc.keyword
+                })
+            }
+            else if (acc.term.toLowerCase() === 'circle') {
+                termsFilteredArray.push({
+                    term: 'circleobj',
+                    keyword: acc.keyword
+                })
+            }
+            else if (acc.term.toLowerCase() === 'va') {
+                termsFilteredArray.push({
+                    term: 'vas',
+                    keyword: acc.keyword
+                })
+            }
         }
 
         switch (acc.term) {
@@ -330,12 +402,30 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
                 continue
         }
     }
+
+    // Query accurate search 
+    if (termsFilteredArray.length) {
+        // Base term search
+        query = query
+        .whereRaw(
+            `??::text LIKE ?`, 
+            [termsFilteredArray[0].term, `%${termsFilteredArray[0].keyword}%`]
+        )
+
+        // Search for all terms
+        termsFilteredArray.shift()
+        termsFilteredArray.forEach(e => {
+            console.log(e.term);
+            query = query.andWhereRaw(`??::text LIKE ?`, [e.term, `%${e.keyword}%`])
+        })
+    }
     
+    // Query plain text search
     for (const keyword of pAllTerms.plainKeywords) {
         query = query.andWhere(function() {
             this.whereLike('work_title', `%${keyword}%`)
             .orWhereRaw(`tags::text LIKE '%${keyword}%'`)
-            .orWhereRaw(`circleObj::text LIKE '%${keyword}%'`)
+            .orWhereRaw(`circleobj::text LIKE '%${keyword}%'`)
             .orWhereRaw(`vas::text LIKE '%${keyword}%'`)
         });
     }
@@ -368,6 +458,8 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
     .where('rj_code', 'in', query)
     .count('rj_code')
 }
+
+//---------------------------------------------------------------------------
 
 /**
  * 

@@ -5,7 +5,9 @@
 // }
 
 // test()
-const { getWorks, randomOrder, getWorkByKeyword, getWorkByKeywordCountWorks } = require('./query')
+const { getWorks, randomOrder, 
+    getWorkByKeyword, getWorkByKeywordCountWorks,
+} = require('./query')
 
 // getWorks(1, 'rate_average_2dp', 'desc', 0)
 // .then(res => {
@@ -29,16 +31,17 @@ const { getWorks, randomOrder, getWorkByKeyword, getWorkByKeywordCountWorks } = 
 
 // const terms = 'Oneesan / Older Girl / Older Sister B-bishop $sell:1000$'
 // const terms = 'Dirty Talk Collar / Chain / Restraints'
-// const terms = 'RJ164850'
+// const terms = '$tag:Dirty Talk$'
+// const terms = '$tag=Dirty Talk$'
 
 // getWorkByKeyword(terms, 'alt_rj_code', 'desc', 0, 1)
 // .then(res => {
-//     console.log(res);
+//     // console.log(res);
 //     console.log('LENGTH', res.length);
 //     process.exit(0)
 // })
 
-// getWorkByKeywordCountWorks(terms, 'alt_rj_code', 'desc', 1)
+// getWorkByKeywordCountWorks(terms, 'alt_rj_code', 'desc', 0)
 // .then(res => {
 //     console.log(res);
 //     process.exit(0)
