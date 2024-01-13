@@ -119,7 +119,8 @@ const processFolder = folder => md.db('ys')
 .first()
 .then(res => {
     if (res.count === '0') {
-        return md.getWorksData(folder.rjcode, folder.name, folder.userSetRootDir)
+        // folder.rjcode, folder.name, folder.userSetRootDir
+        return md.getWorksData(folder)
         .then(result => {
             if (result === 'added') {
                 return 'added'
