@@ -1,5 +1,9 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/12/2024
+
+1. Simplify parameters pass on to functions.
+
 ## 1/11/2024
 
 1. Store media files' duration to database dynamically when requested.

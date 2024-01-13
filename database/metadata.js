@@ -12,18 +12,18 @@ const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
  * Work inside the db will stay untouched.
  * 
  * @param {object} work Work object
- * @param {string} workdir work's directory
+ * @param {object} folder folder object
  * @returns 
  */
-const insertWorkTodb = (work, workdir, userSetRootDir) => db.transaction(trx => 
+const insertWorkTodb = (work, folder) => db.transaction(trx => 
     trx('ys')
     .transacting(trx)
     .insert({
         rj_code: work.workno,
         alt_rj_code: work.alt_rj_code,
         work_title: work.work_name,
-        work_dir: workdir,
-        userset_rootdir: userSetRootDir,
+        work_dir: folder.name,
+        userset_rootdir: folder.userSetRootDir,
         work_main_img: work.main_img,
         circle_id: work.circle_id,
         nsfw: work.nsfw,
@@ -127,15 +127,13 @@ const processdGenres = (targetGenres, compareGenres) => {
 
 /**
  * Fetching work's metadata, add work and its metadata into the data base.
- * @param {string} rjcode RJcode
- * @param {string} workdir work's directory
- * @param {string} userSetRootDir user set root dir
+ * @param {object} folder folder object
  * @returns added if success or return err message
  */
-const getWorksData = (rjcode, workdir, userSetRootDir) => {
-    return scWorkAllData(rjcode)
+const getWorksData = (folder) => {
+    return scWorkAllData(folder.rjcode)
     .then(workdata => {
-        return insertWorkTodb(workdata, workdir, userSetRootDir)
+        return insertWorkTodb(workdata, folder)
         .then(() => {
             // console.log(`${rjcode} has been added to db`);
             return 'added'
