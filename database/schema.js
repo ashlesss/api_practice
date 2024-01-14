@@ -24,6 +24,7 @@ const createSchema = () => db.schema
     tbl.text('language_editions')
     tbl.timestamps(true, true)
 
+    tbl.foreign('circle_id').references('id').inTable('t_circle')
     tbl.primary('rj_code')
 })
 .createTable('t_tag_id', tbl => {
@@ -38,7 +39,7 @@ const createSchema = () => db.schema
     tbl.string('tag_rjcode')
     
     tbl.foreign('tag_id').references('id').inTable('t_tag_id')
-    tbl.foreign('tag_rjcode').references('rj_code').inTable('ys')
+    tbl.foreign('tag_rjcode').references('rj_code').inTable('ys').onDelete('CASCADE')
     tbl.primary(['tag_id', 'tag_rjcode'])
 })
 .createTable('t_va_id', tbl => {
@@ -50,7 +51,7 @@ const createSchema = () => db.schema
     tbl.string('va_rjcode')
 
     tbl.foreign('va_id').references('id').inTable('t_va_id')
-    tbl.foreign('va_rjcode').references('rj_code').inTable('ys')
+    tbl.foreign('va_rjcode').references('rj_code').inTable('ys').onDelete('CASCADE')
     tbl.primary(['va_id', 'va_rjcode'])
 })
 .createTable('t_user', tbl => {
@@ -71,159 +72,65 @@ const createSchema = () => db.schema
 		'rj_code', 'file_path'
 	])
 })
+.createTable('t_history', tbl => {
+    tbl.string('username')
+    tbl.string('rj_code')
+    tbl.string('file_name')
+    tbl.float('start_at')
+    tbl.integer('listen_counts')
+
+    tbl.foreign('username').references('username').inTable('t_user').onDelete('CASCADE')
+    tbl.foreign('rj_code').references('rj_code').inTable('ys').onDelete('CASCADE')
+    tbl.primary([
+        'username',
+        'rj_code',
+        'file_name'
+    ])
+})
 // works_w_metadata
 .raw(`
 CREATE OR REPLACE VIEW works_w_metadata
 AS
-SELECT
-	basequerywithva.rj_code,
-	basequerywithva.alt_rj_code,
-	basequerywithva.work_title,
-	basequerywithva.userset_rootdir,
-	basequerywithva.work_dir,
-	basequerywithva.work_main_img,
-	basequerywithva.circle_id,
-	basequerywithva.nsfw,
-	basequerywithva.official_price,
-	basequerywithva.dl_count,
-	basequerywithva.regist_date,
-	basequerywithva.rate_count,
-	basequerywithva.rate_average_2dp,
-	basequerywithva.rate_count_detail,
-	basequerywithva.has_subtitle,
-	basequerywithva.language_editions,
-	basequerywithva.created_at,
-	basequerywithva.updated_at,
-	basequerywithva.circleobj,
-	basequerywithva.vas,
-	jsonb_build_object (
-		'tags',
-		jsonb_agg (
-			jsonb_build_object (
-				'tag_id',
-				t_tag_id.ID,
-				'i18n',
-				jsonb_build_object ( 'en_us', t_tag_id.en_us, 'ja_jp', t_tag_id.ja_jp, 'zh_cn', t_tag_id.zh_cn ),
-				'tag_name',
-				t_tag_id.tag_name 
-			) 
-		) 
-	) AS tags 
-FROM
-	(
-	SELECT
-		basequery.rj_code,
-		basequery.alt_rj_code,
-		basequery.work_title,
-		basequery.userset_rootdir,
-		basequery.work_dir,
-		basequery.work_main_img,
-		basequery.circle_id,
-		basequery.nsfw,
-		basequery.official_price,
-		basequery.dl_count,
-		basequery.regist_date,
-		basequery.rate_count,
-		basequery.rate_average_2dp,
-		basequery.rate_count_detail,
-		basequery.has_subtitle,
-		basequery.language_editions,
-		basequery.created_at,
-		basequery.updated_at,
-		basequery.circleobj,
-		jsonb_build_object ( 'vas', jsonb_agg ( jsonb_build_object ( 'va_id', t_va_id.ID, 'va_name', t_va_id.va_name ) ) ) AS vas
-	FROM
-		(
-		SELECT
-			ys.rj_code,
-			ys.alt_rj_code,
-			ys.work_title,
-			ys.userset_rootdir,
-			ys.work_dir,
-			ys.work_main_img,
-			ys.circle_id,
-			ys.nsfw,
-			ys.official_price,
-			ys.dl_count,
-			ys.regist_date,
-			ys.rate_count,
-			ys.rate_average_2dp,
-			ys.rate_count_detail,
-			ys.has_subtitle,
-			ys.language_editions,
-			ys.created_at,
-			ys.updated_at,
-			jsonb_build_object ( 'circle_id', ys.circle_id, 'circle_name', t_circle.circle_name ) AS circleobj 
-		FROM
-			ys
-			JOIN t_circle ON t_circle.ID = ys.circle_id 
-		GROUP BY
-			ys.rj_code,
-			ys.alt_rj_code,
-			ys.work_title,
-			ys.userset_rootdir,
-			ys.work_dir,
-			ys.work_main_img,
-			ys.circle_id,
-			t_circle.circle_name,
-			ys.nsfw,
-			ys.official_price,
-			ys.dl_count,
-			ys.regist_date,
-			ys.rate_count,
-			ys.rate_average_2dp,
-			ys.rate_count_detail,
-			ys.has_subtitle,
-			ys.language_editions 
-		) basequery
-		LEFT JOIN t_va ON t_va.va_rjcode :: TEXT = basequery.rj_code ::
-		TEXT LEFT JOIN t_va_id ON t_va_id.ID = t_va.va_id
-	GROUP BY
-		basequery.rj_code,
-		basequery.alt_rj_code,
-		basequery.work_title,
-		basequery.userset_rootdir,
-		basequery.work_dir,
-		basequery.work_main_img,
-		basequery.circle_id,
-		basequery.nsfw,
-		basequery.official_price,
-		basequery.dl_count,
-		basequery.regist_date,
-		basequery.rate_count,
-		basequery.rate_average_2dp,
-		basequery.rate_count_detail,
-		basequery.has_subtitle,
-		basequery.language_editions,
-		basequery.created_at,
-		basequery.updated_at,
-		basequery.circleobj
-	) basequerywithva
-	LEFT JOIN t_tag ON t_tag.tag_rjcode :: TEXT = basequerywithva.rj_code ::
-	TEXT LEFT JOIN t_tag_id ON t_tag_id.ID = t_tag.tag_id 
-GROUP BY
-	basequerywithva.rj_code,
-	basequerywithva.alt_rj_code,
-	basequerywithva.work_title,
-	basequerywithva.userset_rootdir,
-	basequerywithva.work_dir,
-	basequerywithva.work_main_img,
-	basequerywithva.circle_id,
-	basequerywithva.nsfw,
-	basequerywithva.official_price,
-	basequerywithva.dl_count,
-	basequerywithva.regist_date,
-	basequerywithva.rate_count,
-	basequerywithva.rate_average_2dp,
-	basequerywithva.rate_count_detail,
-	basequerywithva.has_subtitle,
-	basequerywithva.language_editions,
-	basequerywithva.created_at,
-	basequerywithva.updated_at,
-	basequerywithva.circleobj,
-	basequerywithva.vas
-ORDER BY
-	basequerywithva.alt_rj_code
+SELECT ys.rj_code,
+ys.alt_rj_code,
+ys.work_title,
+ys.userset_rootdir,
+ys.work_dir,
+ys.work_main_img,
+ys.circle_id,
+ys.nsfw,
+ys.official_price,
+ys.dl_count,
+ys.regist_date,
+ys.rate_count,
+ys.rate_average_2dp,
+ys.rate_count_detail,
+ys.has_subtitle,
+ys.language_editions,
+ys.created_at,
+ys.updated_at,
+basequeryall.circleobj,
+basequeryall.tags,
+basequeryall.vas
+FROM ys
+ JOIN ( SELECT basequerywithva.rj_code,
+		basequerywithva.circleobj,
+		basequerywithva.vas,
+		jsonb_build_object('tags', jsonb_agg(jsonb_build_object('tag_id', t_tag_id.id, 'i18n', jsonb_build_object('en_us', t_tag_id.en_us, 'ja_jp', t_tag_id.ja_jp, 'zh_cn', t_tag_id.zh_cn), 'tag_name', t_tag_id.tag_name))) AS tags
+	   FROM ( SELECT basequery.rj_code,
+				basequery.circleobj,
+				jsonb_build_object('vas', jsonb_agg(jsonb_build_object('va_id', t_va_id.id, 'va_name', t_va_id.va_name))) AS vas
+			   FROM ( SELECT ys_1.rj_code,
+						jsonb_build_object('circle_id', ys_1.circle_id, 'circle_name', t_circle.circle_name) AS circleobj
+					   FROM ys ys_1
+						 JOIN t_circle ON t_circle.id = ys_1.circle_id) basequery
+				 LEFT JOIN t_va ON t_va.va_rjcode::text = basequery.rj_code::text
+				 LEFT JOIN t_va_id ON t_va_id.id = t_va.va_id
+			  GROUP BY basequery.rj_code, basequery.circleobj) basequerywithva
+		 LEFT JOIN t_tag ON t_tag.tag_rjcode::text = basequerywithva.rj_code::text
+		 LEFT JOIN t_tag_id ON t_tag_id.id = t_tag.tag_id
+	  GROUP BY basequerywithva.rj_code, basequerywithva.circleobj, basequerywithva.vas) basequeryall ON basequeryall.rj_code::text = ys.rj_code::text
+ORDER BY ys.alt_rj_code
 
 `)
 // works_w_metadata_public 
@@ -231,141 +138,46 @@ ORDER BY
     `
     CREATE OR REPLACE VIEW works_w_metadata_public
     AS
-    SELECT
-	basequerywithva.rj_code,
-	basequerywithva.alt_rj_code,
-	basequerywithva.work_title,
-	basequerywithva.work_main_img,
-	basequerywithva.circle_id,
-	basequerywithva.nsfw,
-	basequerywithva.official_price,
-	basequerywithva.dl_count,
-	basequerywithva.regist_date,
-	basequerywithva.rate_count,
-	basequerywithva.rate_average_2dp,
-	basequerywithva.rate_count_detail,
-	basequerywithva.has_subtitle,
-	basequerywithva.language_editions,
-	basequerywithva.created_at,
-	basequerywithva.updated_at,
-	basequerywithva.circleobj,
-	basequerywithva.vas,
-	jsonb_build_object (
-		'tags',
-		jsonb_agg (
-			jsonb_build_object (
-				'tag_id',
-				t_tag_id.ID,
-				'i18n',
-				jsonb_build_object ( 'en_us', t_tag_id.en_us, 'ja_jp', t_tag_id.ja_jp, 'zh_cn', t_tag_id.zh_cn ),
-				'tag_name',
-				t_tag_id.tag_name 
-			) 
-		) 
-	) AS tags 
-FROM
-	(
-	SELECT
-		basequery.rj_code,
-		basequery.alt_rj_code,
-		basequery.work_title,
-		basequery.work_main_img,
-		basequery.circle_id,
-		basequery.nsfw,
-		basequery.official_price,
-		basequery.dl_count,
-		basequery.regist_date,
-		basequery.rate_count,
-		basequery.rate_average_2dp,
-		basequery.rate_count_detail,
-		basequery.has_subtitle,
-		basequery.language_editions,
-		basequery.created_at,
-		basequery.updated_at,
-		basequery.circleobj,
-		jsonb_build_object ( 'vas', jsonb_agg ( jsonb_build_object ( 'va_id', t_va_id.ID, 'va_name', t_va_id.va_name ) ) ) AS vas 
-	FROM
-		(
-		SELECT
-			ys.rj_code,
-			ys.alt_rj_code,
-			ys.work_title,
-			ys.work_main_img,
-			ys.circle_id,
-			ys.nsfw,
-			ys.official_price,
-			ys.dl_count,
-			ys.regist_date,
-			ys.rate_count,
-			ys.rate_average_2dp,
-			ys.rate_count_detail,
-			ys.has_subtitle,
-			ys.language_editions,
-			ys.created_at,
-			ys.updated_at,
-			jsonb_build_object ( 'circle_id', ys.circle_id, 'circle_name', t_circle.circle_name ) AS circleobj 
-		FROM
-			ys
-			JOIN t_circle ON t_circle.ID = ys.circle_id 
-		GROUP BY
-			ys.rj_code,
-			ys.alt_rj_code,
-			ys.work_title,
-			ys.work_main_img,
-			ys.circle_id,
-			t_circle.circle_name,
-			ys.nsfw,
-			ys.official_price,
-			ys.dl_count,
-			ys.regist_date,
-			ys.rate_count,
-			ys.rate_average_2dp,
-			ys.rate_count_detail,
-			ys.has_subtitle,
-			ys.language_editions 
-		) basequery
-		LEFT JOIN t_va ON t_va.va_rjcode :: TEXT = basequery.rj_code ::
-		TEXT LEFT JOIN t_va_id ON t_va_id.ID = t_va.va_id 
-	GROUP BY
-		basequery.rj_code,
-		basequery.alt_rj_code,
-		basequery.work_title,
-		basequery.work_main_img,
-		basequery.circle_id,
-		basequery.nsfw,
-		basequery.official_price,
-		basequery.dl_count,
-		basequery.regist_date,
-		basequery.rate_count,
-		basequery.rate_average_2dp,
-		basequery.rate_count_detail,
-		basequery.has_subtitle,
-		basequery.language_editions,
-		basequery.created_at,
-		basequery.updated_at,
-		basequery.circleobj 
-	) basequerywithva
-	LEFT JOIN t_tag ON t_tag.tag_rjcode :: TEXT = basequerywithva.rj_code ::
-	TEXT LEFT JOIN t_tag_id ON t_tag_id.ID = t_tag.tag_id 
-GROUP BY
-	basequerywithva.rj_code,
-	basequerywithva.alt_rj_code,
-	basequerywithva.work_title,
-	basequerywithva.work_main_img,
-	basequerywithva.circle_id,
-	basequerywithva.nsfw,
-	basequerywithva.official_price,
-	basequerywithva.dl_count,
-	basequerywithva.regist_date,
-	basequerywithva.rate_count,
-	basequerywithva.rate_average_2dp,
-	basequerywithva.rate_count_detail,
-	basequerywithva.has_subtitle,
-	basequerywithva.language_editions,
-	basequerywithva.created_at,
-	basequerywithva.updated_at,
-	basequerywithva.circleobj,
-	basequerywithva.vas
+	SELECT ys.rj_code,
+    ys.alt_rj_code,
+    ys.work_title,
+    ys.userset_rootdir,
+    ys.work_dir,
+    ys.work_main_img,
+    ys.circle_id,
+    ys.nsfw,
+    ys.official_price,
+    ys.dl_count,
+    ys.regist_date,
+    ys.rate_count,
+    ys.rate_average_2dp,
+    ys.rate_count_detail,
+    ys.has_subtitle,
+    ys.language_editions,
+    ys.created_at,
+    ys.updated_at,
+    basequeryall.circleobj,
+    basequeryall.tags,
+    basequeryall.vas
+   FROM ys
+     JOIN ( SELECT basequerywithva.rj_code,
+            basequerywithva.circleobj,
+            basequerywithva.vas,
+            jsonb_build_object('tags', jsonb_agg(jsonb_build_object('tag_id', t_tag_id.id, 'i18n', jsonb_build_object('en_us', t_tag_id.en_us, 'ja_jp', t_tag_id.ja_jp, 'zh_cn', t_tag_id.zh_cn), 'tag_name', t_tag_id.tag_name))) AS tags
+           FROM ( SELECT basequery.rj_code,
+                    basequery.circleobj,
+                    jsonb_build_object('vas', jsonb_agg(jsonb_build_object('va_id', t_va_id.id, 'va_name', t_va_id.va_name))) AS vas
+                   FROM ( SELECT ys_1.rj_code,
+                            jsonb_build_object('circle_id', ys_1.circle_id, 'circle_name', t_circle.circle_name) AS circleobj
+                           FROM ys ys_1
+                             JOIN t_circle ON t_circle.id = ys_1.circle_id) basequery
+                     LEFT JOIN t_va ON t_va.va_rjcode::text = basequery.rj_code::text
+                     LEFT JOIN t_va_id ON t_va_id.id = t_va.va_id
+                  GROUP BY basequery.rj_code, basequery.circleobj) basequerywithva
+             LEFT JOIN t_tag ON t_tag.tag_rjcode::text = basequerywithva.rj_code::text
+             LEFT JOIN t_tag_id ON t_tag_id.id = t_tag.tag_id
+          GROUP BY basequerywithva.rj_code, basequerywithva.circleobj, basequerywithva.vas) basequeryall ON basequeryall.rj_code::text = ys.rj_code::text
+  ORDER BY ys.alt_rj_code
     `
 )
 .then(() => {

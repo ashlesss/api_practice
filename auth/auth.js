@@ -6,6 +6,9 @@ const { addUser } = require('../database/users')
 const { validate } = require('../routes/utils/validateRequest')
 const { signToken, getTokenInfo } = require('./utils');
 const { config } = require('../config')
+const bcrypt = require('bcrypt');
+
+// Endpoint /api/auth
 
 router.post('/register', [
     check('username', 'Username contains illegal characters or is out of length(5-15 characters).')
@@ -17,23 +20,28 @@ router.post('/register', [
 
     addUser(req.body)
     .then(result => {
-        if (result.errno) {
-            if (result.errno === 19) {
-                res.status(422).json({
-                    info: 'Username already taken.'
-                })
-            }
-            else {
-                console.log(result);
-                res.status(500).json({
-                    error: 'Registing caused error, try again later.'
-                })
-            }
-            
+        if (result === 'user_exists') {
+            res.status(422).json({
+                status: 'user_exists',
+                info: 'Username already taken.'
+            })
         }
         else {
-            res.status(200).json(`${result} created successfully.`)
+            console.log(
+                `[REGISTER USER] ${result[0].username} created successfully.`
+            );
+            res.status(200)
+            .json({
+                status: 'create_success',
+                info: `${result[0].username} created successfully.`
+            })
         }
+    })
+    .catch(err => {
+        console.error(`[REGISTER USER] Registering user error: $${err}`);
+        res.status(500).json({
+            error: 'Registing caused error, try again later.'
+        })
     })
 })
 
@@ -47,20 +55,27 @@ router.post('/me', [
     if (!validate(req, res)) return 
 
     const username = req.body.username
-    const password = req.body.password
+    const plainPassword = req.body.password
 
     db('t_user')
         .where({ username })
-        .andWhere({ password })
         .first()
         .then(user => {
             if (!user) {
                 res.status(401).json({ error: 'Wrong username or password.'})
             }
             else {
-                const token = signToken(user)
-                res.send({ token })
-                // res.status(200).json({ info: 'login approved.'})
+                if (bcrypt.compareSync(plainPassword, user.password)) {
+                    const token = signToken(user)
+                    res.send({ token })
+                    // res.status(200).json({ info: 'login approved.'})
+                }
+                else {
+                    res.status(401).json({
+                        status: 'login_failed',
+                        info: 'Wrong username or password'
+                    })
+                }
             }
         })
         .catch(err => {

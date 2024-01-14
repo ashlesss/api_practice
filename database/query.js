@@ -245,7 +245,7 @@ async function getWorkByKeyword(allTerms, order, sort, subtitle, page) {
         // Search for all terms
         termsFilteredArray.shift()
         termsFilteredArray.forEach(e => {
-            console.log(e.term);
+            // console.log(e.term);
             query = query.andWhereRaw(`??::text LIKE ?`, [e.term, `%${e.keyword}%`])
         })
     }
@@ -415,7 +415,7 @@ async function getWorkByKeywordCountWorks(allTerms, order, sort, subtitle) {
         // Search for all terms
         termsFilteredArray.shift()
         termsFilteredArray.forEach(e => {
-            console.log(e.term);
+            // console.log(e.term);
             query = query.andWhereRaw(`??::text LIKE ?`, [e.term, `%${e.keyword}%`])
         })
     }
