@@ -1,5 +1,9 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/15/2024
+
+1. Refactor `insertWorkTodb` function insertion order in `./database/metadata.js`.
+
 ## 1/14/2024
 
 1. Hash user password.

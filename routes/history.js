@@ -86,7 +86,8 @@ async (req, res) => {
             res.status(422).json({
                 status: 'fields_missing',
                 info: `check below which fields are missing`,
-                token: req.decodedToken ? 'ok' : 'missing',
+                token: req.decodedToken ? 
+                    (process.env.NODE_ENV === 'development' ? 'development' : 'ok') : 'missing',
                 rjcode: rjcode ?? 'missing',
                 filename: filename ?? 'missing',
                 startAt: startAt ?? 'missing'

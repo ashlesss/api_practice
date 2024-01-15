@@ -13,101 +13,87 @@ const { scWorkAllData, scGetSaledata } = require('../scraper/dlsite')
  * 
  * @param {object} work Work object
  * @param {object} folder folder object
- * @returns 
  */
-const insertWorkTodb = (work, folder) => db.transaction(trx => 
-    trx('ys')
-    .transacting(trx)
-    .insert({
-        rj_code: work.workno,
-        alt_rj_code: work.alt_rj_code,
-        work_title: work.work_name,
-        work_dir: folder.name,
-        userset_rootdir: folder.userSetRootDir,
-        work_main_img: work.main_img,
-        circle_id: work.circle_id,
-        nsfw: work.nsfw,
-        official_price: work.official_price,
-        dl_count: work.dl_count,
-        regist_date: work.regist_date,
-        rate_count: work.rate_count,
-        rate_average_2dp: work.rate_average_2dp,
-        rate_count_detail: work.rate_count_detail,
-        has_subtitle: work.has_subtitle,
-        language_editions: work.language_editions
-    })
-    .onConflict().ignore()
-    .then(() => {
-        const promises = []
+async function insertWorkTodb(work, folder) {
+    await db.transaction(async trx => {
+        await trx('t_circle')
+        .transacting(trx)
+        .insert({
+            id: work.circle_id,
+            circle_name: work.maker_name
+        })
+        .onConflict().ignore()
 
-        // Add tags to work
+        await trx('ys')
+        .transacting(trx)
+        .insert({
+            rj_code: work.workno,
+            alt_rj_code: work.alt_rj_code,
+            work_title: work.work_name,
+            work_dir: folder.name,
+            userset_rootdir: folder.userSetRootDir,
+            work_main_img: work.main_img,
+            circle_id: work.circle_id,
+            nsfw: work.nsfw,
+            official_price: work.official_price,
+            dl_count: work.dl_count,
+            regist_date: work.regist_date,
+            rate_count: work.rate_count,
+            rate_average_2dp: work.rate_average_2dp,
+            rate_count_detail: work.rate_count_detail,
+            has_subtitle: work.has_subtitle,
+            language_editions: work.language_editions
+        })
+        .onConflict().ignore()
+
         if (work.genres) {
             const genres = JSON.parse(work.genres)
-            for (let i = 0; i < genres.length; i++) {
-                promises.push(
-                    trx('t_tag_id')
-                    .transacting(trx)
-                    .insert({
-                        id: genres[i].id,
-                        tag_name: genres[i].name,
-                        en_us: processdGenres(work.enGenres, genres[i]),
-                        ja_jp: genres[i].name_base,
-                        zh_cn: genres[i].name
-                    })
-                    .onConflict().ignore()
-                    .then(() => 
-                        trx('t_tag')
-                        .transacting(trx)
-                        .insert({
-                            tag_id: genres[i].id,
-                            tag_rjcode: work.workno
-                        })
-                        .onConflict().ignore()
-                    )
-                )
+
+            for (const genre of genres) {
+                await trx('t_tag_id')
+                .transacting(trx)
+                .insert({
+                    id: genre.id,
+                    tag_name: genre.name,
+                    en_us: processdGenres(work.enGenres, genre),
+                    ja_jp: genre.name_base,
+                    zh_cn: genre.name
+                })
+                .onConflict().ignore()
+
+                await trx('t_tag')
+                .transacting(trx)
+                .insert({
+                    tag_id: genre.id,
+                    tag_rjcode: work.workno
+                })
+                .onConflict().ignore()
             }
         }
-        
 
-        promises.push(
-            trx('t_circle')
-            .transacting(trx)
-            .insert({
-                id: work.circle_id,
-                circle_name: work.maker_name
-            })
-            .onConflict().ignore()
-        )
-
-
-        // Add va to work
         if (work.va) {
-            const va = JSON.parse(work.va)
-            for (let i = 0; i < va.length; i++) {
-                promises.push(
-                    trx('t_va_id')
-                    .transacting(trx)
-                    .insert({
-                        id: va[i].id,
-                        va_name: va[i].name
-                    })
-                    .onConflict().ignore()
-                    .then(() => 
-                        trx('t_va')
-                        .transacting(trx)
-                        .insert({
-                            va_id: va[i].id,
-                            va_rjcode: work.workno
-                        })
-                        .onConflict().ignore()
-                    )
-                )
+            const vas = JSON.parse(work.va)
+
+            for (const va of vas) {
+                await trx('t_va_id')
+                .transacting(trx)
+                .insert({
+                    id: va.id,
+                    va_name: va.name
+                })
+                .onConflict().ignore()
+
+                await trx('t_va')
+                .transacting(trx)
+                .insert({
+                    va_id: va.id,
+                    va_rjcode: work.workno
+                })
+                .onConflict().ignore()
             }
         }
-
-        return Promise.all(promises)
     })
-)
+}
 
 /**
  * Process mutli languages genres compare target genres their genres id
