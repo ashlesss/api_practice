@@ -1,5 +1,9 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/17/2024
+
+1. Create route for getting track's listening history.
+
 ## 1/15/2024
 
 1. Refactor `insertWorkTodb` function insertion order in `./database/metadata.js`.

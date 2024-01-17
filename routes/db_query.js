@@ -177,7 +177,7 @@ query('video').optional({values: null}).isInt(), (req, res) => {
     })
 })
 
-router.get('/ramdonPlay', async (req, res) => {
+router.get('/randomPlay', async (req, res) => {
     try {
         const workCount = await db('ys').count({count: 'rj_code'})
         const count = workCount[0].count

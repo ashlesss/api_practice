@@ -23,7 +23,17 @@ async function updateListenHistory(history, token) {
     })
 }
 
+async function getListenHistory(rjcode, token) {
+    return await db('t_history')
+    .select('file_name', 'start_at')
+    .where({
+        rj_code: rjcode,
+        username: token.user
+    })
+}
+
 module.exports = {
     insertListenHistory,
-    updateListenHistory
+    updateListenHistory,
+    getListenHistory
 }
