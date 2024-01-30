@@ -5,7 +5,6 @@ const auth = require('../auth/auth')
 const { routeGuard } = require('../auth/guard')
 const { config } = require('../config')
 const configRoute = require('../routes/config')
-const history = require('../routes/history')
 
 module.exports = server => {
     if (config.auth) {
@@ -16,7 +15,6 @@ module.exports = server => {
         server.use('/api/media', routeGuard, media);
         server.use('/api/config', routeGuard, configRoute)
         server.use('/api/auth', auth)
-        server.use('/api/history', routeGuard, history)
     }
     else {
         server.get('/api/health', (req, res) => {
@@ -27,9 +25,6 @@ module.exports = server => {
         server.use('/api/config', configRoute)
         server.use('/api/auth', auth)
         
-        if (process.env.NODE_ENV === 'development') {
-            server.use('/api/history', history)
-        }
         
     }
 }

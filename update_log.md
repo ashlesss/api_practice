@@ -1,8 +1,12 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+## 1/30/2024
+
+1. History playback didn't have much user experience as expected, delete.
+
 ## 1/17/2024
 
-1. Create route for getting track's listening history.
+1. ~~Create route for getting track's listening history.~~
 
 ## 1/15/2024
 
@@ -11,7 +15,7 @@ Built based on [kikoeru project](https://github.com/kikoeru-project)
 ## 1/14/2024
 
 1. Hash user password.
-2. Add route to deal with listening history playback.
+2. ~~Add route to deal with listening history playback.~~
 3. Simplify view table creation logic.
 
 ## 1/12/2024

@@ -72,21 +72,6 @@ const createSchema = () => db.schema
 		'rj_code', 'file_path'
 	])
 })
-.createTable('t_history', tbl => {
-    tbl.string('username')
-    tbl.string('rj_code')
-    tbl.string('file_name')
-    tbl.float('start_at')
-    tbl.integer('listen_counts')
-
-    tbl.foreign('username').references('username').inTable('t_user').onDelete('CASCADE')
-    tbl.foreign('rj_code').references('rj_code').inTable('ys').onDelete('CASCADE')
-    tbl.primary([
-        'username',
-        'rj_code',
-        'file_name'
-    ])
-})
 // works_w_metadata
 .raw(`
 CREATE OR REPLACE VIEW works_w_metadata
