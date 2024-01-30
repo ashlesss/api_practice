@@ -22,6 +22,7 @@ const createSchema = () => db.schema
     tbl.string('rate_count_detail')
     tbl.boolean('has_subtitle')
     tbl.text('language_editions')
+    tbl.boolean('available')
     tbl.timestamps(true, true)
 
     tbl.foreign('circle_id').references('id').inTable('t_circle')

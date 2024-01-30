@@ -42,7 +42,8 @@ async function insertWorkTodb(work, folder) {
             rate_average_2dp: work.rate_average_2dp,
             rate_count_detail: work.rate_count_detail,
             has_subtitle: work.has_subtitle,
-            language_editions: work.language_editions
+            language_editions: work.language_editions,
+            available: folder.available
         })
         .onConflict().ignore()
 
