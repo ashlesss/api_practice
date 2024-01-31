@@ -1,5 +1,11 @@
 Built based on [kikoeru project](https://github.com/kikoeru-project)
 
+# 1/31/2024
+
+1. Store default admin account info on a txt file.
+2. Add a switch that open or close user registration.
+3. Add `patch` command on npm where will patch the fixed packages.
+
 ## 1/30/2024
 
 1. History playback didn't have much user experience as expected, delete.

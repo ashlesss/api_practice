@@ -10,40 +10,50 @@ const bcrypt = require('bcrypt');
 
 // Endpoint /api/auth
 
-router.post('/register', [
-    check('username', 'Username contains illegal characters or is out of length(5-15 characters).')
-        .matches(/^[a-zA-Z0-9_-]{5,15}$/),
-    check('password', 'Password must contain at least one lowercase letter, one number, and be between 5-20 characters in length.')
-        .matches(/^(?=.*[a-z])(?=.*\d)[a-zA-Z\d]{5,20}$/)
-], (req, res) => {
-    if (!validate(req, res)) return 
-
-    addUser(req.body)
-    .then(result => {
-        if (result === 'user_exists') {
-            res.status(422).json({
-                status: 'user_exists',
-                info: 'Username already taken.'
+if (config.openRegister) {
+    router.post('/register', [
+        check('username', 'Username contains illegal characters or is out of length(5-15 characters).')
+            .matches(/^[a-zA-Z0-9_-]{5,15}$/),
+        check('password', 'Password must contain at least one lowercase letter, one number, and be between 5-20 characters in length.')
+            .matches(/^(?=.*[a-z])(?=.*\d)[a-zA-Z\d]{5,20}$/)
+    ], (req, res) => {
+        if (!validate(req, res)) return 
+    
+        addUser(req.body)
+        .then(result => {
+            if (result === 'user_exists') {
+                res.status(422).json({
+                    status: 'user_exists',
+                    info: 'Username already taken.'
+                })
+            }
+            else {
+                console.log(
+                    `[REGISTER USER] ${result[0].username} created successfully.`
+                );
+                res.status(200)
+                .json({
+                    status: 'create_success',
+                    info: `${result[0].username} created successfully.`
+                })
+            }
+        })
+        .catch(err => {
+            console.error(`[REGISTER USER] Registering user error: $${err}`);
+            res.status(500).json({
+                error: 'Registing caused error, try again later.'
             })
-        }
-        else {
-            console.log(
-                `[REGISTER USER] ${result[0].username} created successfully.`
-            );
-            res.status(200)
-            .json({
-                status: 'create_success',
-                info: `${result[0].username} created successfully.`
-            })
-        }
-    })
-    .catch(err => {
-        console.error(`[REGISTER USER] Registering user error: $${err}`);
-        res.status(500).json({
-            error: 'Registing caused error, try again later.'
         })
     })
-})
+}
+else {
+    router.post('/register', (req, res) => {
+        res.status(200).json({
+            error: 'Register user is not open'
+        })
+    })
+}
+
 
 router.post('/me', [
     check('username', 'Username must be at lease 5 characters.')

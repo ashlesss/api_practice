@@ -29,7 +29,8 @@ const defaultConfig = {
     JWTexpiration: "1w",
     auth: process.env.NODE_ENV === 'production' ? true : false,
     production: process.env.NODE_ENV === 'production' ? true : false,
-    getFileDurationMaxParallelism: 2
+    getFileDurationMaxParallelism: 2,
+    openRegister: false
 }
 
 /**

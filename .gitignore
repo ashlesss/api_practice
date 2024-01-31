@@ -20,3 +20,5 @@ access.log
 cover.js
 
 filesystem/scanModuleTest.js
+
+defaultAdminAccount.txt

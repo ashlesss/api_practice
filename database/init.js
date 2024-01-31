@@ -4,6 +4,7 @@ const path = require('node:path');
 const { createSchema } = require('./schema')
 const { addUser } = require('./users')
 const { db } = require('./metadata')
+const crypto = require('node:crypto');
 
 const databaseExists = fs.existsSync(path.join(config.db_path, 'ys.sqlite3'))
 const imageFolderExists = fs.existsSync(config.img_folder)
@@ -45,11 +46,20 @@ async function initApp() {
         await createSchema()
         await runMigrations()
         try {
-            await addUser({
+            const pw = crypto.randomBytes(8).toString('hex')
+            const adminUser = await addUser({
                 username: 'admin',
-                password: '12345a',
+                password: pw,
                 group: 'admin'
             })
+
+            if (adminUser[0].username) {
+                console.log(
+                    `Username: ${adminUser[0].username}\n`
+                    +`Password: ${pw}`
+                );
+            }
+            
         }
         catch(err) {
             console.error(err);
